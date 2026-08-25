@@ -1,6 +1,6 @@
 {
     "packageId": "app.tassic.twa",
-    "host": "https://__OWNER__.github.io",
+    "host": "__OWNER__.github.io",
     "name": "Tassic",
     "launcherName": "Tassic",
     "display": "standalone",
