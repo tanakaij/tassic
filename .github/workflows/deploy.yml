@@ -107,6 +107,19 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
+      - name: Make Bubblewrap recognize the pre-installed Android SDK
+        # Bubblewrap only accepts an SDK path if it contains a top-level `tools/` or
+        # `bin/` folder (see AndroidSdkTools.validatePath in @bubblewrap/core). GitHub's
+        # runner image only has cmdline-tools/latest/bin, which Bubblewrap doesn't look
+        # in, so `bubblewrap build` fails with "The provided androidSdk isn't correct"
+        # even though ANDROID_HOME is set correctly. Symlinking the tools into
+        # $ANDROID_HOME/bin satisfies both the validation check and the paths Bubblewrap
+        # later uses to locate sdkmanager (ANDROID_HOME/bin/sdkmanager).
+        run: |
+          mkdir -p "$ANDROID_HOME/bin"
+          ln -sf "$ANDROID_HOME"/cmdline-tools/latest/bin/* "$ANDROID_HOME/bin/"
+          ls -la "$ANDROID_HOME/bin"
+
       - name: Generate/refresh the Android TWA project (non-interactive)
         # `update` builds the project + manifest-checksum.txt directly, with no
         # confirmation prompts. Running this first means the later `build` step
