@@ -1,0 +1,28 @@
+# Gradle
+.gradle/
+build/
+composeApp/build/
+
+# Kotlin
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets & keystores (never commit)
+*.jks
+*.keystore
+keystore.properties
+
+# Node / webpack scratch
+node_modules/
+
+# Local config
+local.properties
