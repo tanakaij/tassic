@@ -16,24 +16,23 @@
     "iconUrl": "https://__OWNER__.github.io/Tassic/icons/icon-512.png",
     "maskableIconUrl": "https://__OWNER__.github.io/Tassic/icons/maskable-512.png",
     "splashScreenFadeOutDuration": 300,
-    "signing": {
+    "signingKey": {
         "path": "../tassic-release.jks",
         "alias": "tassic"
     },
-    "appVersionName": "1.0.0",
     "appVersionCode": 1,
     "shortcuts": [
         {
             "name": "Today",
-            "short_name": "Today",
+            "shortName": "Today",
             "url": "/Tassic/?tab=today",
-            "icons": [{ "url": "https://__OWNER__.github.io/Tassic/icons/icon-192.png", "sizes": "192x192" }]
+            "chosenIconUrl": "https://__OWNER__.github.io/Tassic/icons/icon-192.png"
         },
         {
             "name": "New Journal Entry",
-            "short_name": "Journal",
+            "shortName": "Journal",
             "url": "/Tassic/?tab=journal",
-            "icons": [{ "url": "https://__OWNER__.github.io/Tassic/icons/icon-192.png", "sizes": "192x192" }]
+            "chosenIconUrl": "https://__OWNER__.github.io/Tassic/icons/icon-192.png"
         }
     ],
     "fallbackType": "customtabs",
@@ -46,5 +45,5 @@
     "fingerprints": [],
     "additionalTrustedOrigins": [],
     "retainedBundles": [],
-    "appVersion": "1"
+    "appVersion": "1.0.0"
 }
