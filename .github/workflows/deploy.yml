@@ -95,12 +95,12 @@ jobs:
             exit 1
           fi
           mkdir -p "$HOME/.bubblewrap"
-          cat > "$HOME/.bubblewrap/config.json" <<EOF
+          cat > "$HOME/.bubblewrap/config.json" <<EOF2
           {
             "jdkPath": "${JAVA_HOME}",
             "androidSdkPath": "${ANDROID_HOME}"
           }
-          EOF
+          EOF2
           echo "Wrote config:"
           cat "$HOME/.bubblewrap/config.json"
 
@@ -128,12 +128,6 @@ jobs:
 
       - name: Build signed APK & AAB
         run: bubblewrap build --manifest="$(pwd)/twa-manifest.json" --skipVersionUpgrade
-
-      - name: TEMP - Upload keystore so we can save it
-        uses: actions/upload-artifact@v4
-        with:
-          name: temp-keystore-DELETE-AFTER-USE
-          path: tassic-release.jks
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
