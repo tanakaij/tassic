@@ -135,5 +135,5 @@ jobs:
           name: tassic-android-twa
           if-no-files-found: error
           path: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/bundle/release/*.aab
+            app-release-signed.apk
+            app-release-bundle.aab
