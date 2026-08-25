@@ -1,0 +1,110 @@
+name: Tassic · Deploy PWA + Build Android TWA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: tassic-deploy
+  cancel-in-progress: true
+
+jobs:
+  # ------------------------------------------------------------------ Web (PWA)
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle 8.14.3
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.14.3
+          cache-read-only: false
+
+      - name: Compile Wasm app
+        run: gradle :composeApp:wasmJsBrowserDistribution --no-daemon
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: composeApp/build/dist/wasmJs/productionExecutable
+
+  deploy-pages:
+    needs: build-web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ------------------------------------------------------- Android TWA (Bubblewrap)
+  android-twa:
+    needs: deploy-pages
+    runs-on: ubuntu-latest
+    env:
+      BUBBLEWRAP_KEYCHAIN_PASSWORD: ${{ secrets.BUBBLEWRAP_KEYCHAIN_PASSWORD || 'tassic-ci' }}
+      KS_PASS: ${{ secrets.KEYSTORE_PASSWORD || 'tassic123' }}
+      KEY_PASS: ${{ secrets.KEY_PASSWORD || 'tassic123' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (keytool)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Point TWA manifest at this repo's Pages URL
+        run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          sed -i "s/__OWNER__/${OWNER}/g; s|/Tassic/|/${REPO}/|g" twa-manifest.json
+
+      - name: Restore or create signing keystore
+        run: |
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_B64 }}" ]; then
+            echo "Using keystore from secrets"
+            echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > tassic-release.jks
+          else
+            echo "No ANDROID_KEYSTORE_B64 secret — generating a fresh keystore"
+            keytool -genkeypair -v -keystore tassic-release.jks -alias tassic \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$KS_PASS" -keypass "$KEY_PASS" \
+              -dname "CN=Tassic, OU=Mobile, O=Tassic, L=Internet, S=Internet, C=US"
+          fi
+
+      - name: Install Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli
+
+      - name: Build signed APK & AAB (adaptive launcher icons generated for all density buckets)
+        run: |
+          printf '%s\n%s\n' "$KS_PASS" "$KEY_PASS" \
+            | bubblewrap build --manifest=twa-manifest.json --skipPwaValidation
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tassic-android-twa
+          if-no-files-found: error
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
