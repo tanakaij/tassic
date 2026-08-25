@@ -17,7 +17,7 @@
     "maskableIconUrl": "https://__OWNER__.github.io/Tassic/icons/maskable-512.png",
     "splashScreenFadeOutDuration": 300,
     "signingKey": {
-        "path": "../tassic-release.jks",
+        "path": "./tassic-release.jks",
         "alias": "tassic"
     },
     "appVersionCode": 1,
