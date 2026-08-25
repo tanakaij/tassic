@@ -266,7 +266,7 @@ fun JournalComposerSheet(
                 }
                 val id = "clip_${T.now()}"
                 val saved = try {
-                    AudioStore.put(id, url).await()
+                    AudioStore.put(id, url).await<JsAny?>()
                     true
                 } catch (e: Throwable) {
                     false
