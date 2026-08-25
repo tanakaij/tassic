@@ -265,7 +265,12 @@ fun JournalComposerSheet(
                     return@launch
                 }
                 val id = "clip_${T.now()}"
-                val saved = runCatching { AudioStore.put(id, url).await() }.isSuccess
+                val saved = try {
+                    AudioStore.put(id, url).await()
+                    true
+                } catch (e: Throwable) {
+                    false
+                }
                 if (saved) {
                     audioId = id
                     pendingUrl = url
