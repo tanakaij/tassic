@@ -1,46 +1,37 @@
 name: Tassic · Deploy PWA + Build Android TWA
-
 on:
   push:
     branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: tassic-deploy
   cancel-in-progress: true
-
 jobs:
   # ------------------------------------------------------------------ Web (PWA)
   build-web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
-
       - name: Set up Gradle 8.14.3
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.14.3
           cache-read-only: false
-
       - name: Compile Wasm app
         run: gradle :composeApp:wasmJsBrowserDistribution --no-daemon
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: composeApp/build/dist/wasmJs/productionExecutable
-
   deploy-pages:
     needs: build-web
     runs-on: ubuntu-latest
@@ -50,23 +41,21 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-
   # ------------------------------------------------------- Android TWA (Bubblewrap)
   android-twa:
     needs: deploy-pages
     runs-on: ubuntu-latest
     env:
-      BUBBLEWRAP_KEYCHAIN_PASSWORD: ${{ secrets.BUBBLEWRAP_KEYCHAIN_PASSWORD || 'tassic-ci' }}
       KS_PASS: ${{ secrets.KEYSTORE_PASSWORD || 'tassic123' }}
       KEY_PASS: ${{ secrets.KEY_PASSWORD || 'tassic123' }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21 (keytool)
+      - name: Set up JDK 17 (bubblewrap requires 17, not 21)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 17
 
       - name: Set up Node 20
         uses: actions/setup-node@v4
@@ -95,7 +84,20 @@ jobs:
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
 
-      - name: Build signed APK & AAB (adaptive launcher icons generated for all density buckets)
+      - name: Pre-configure Bubblewrap (skip interactive JDK/SDK wizard)
+        run: |
+          mkdir -p "$HOME/.bubblewrap"
+          cat > "$HOME/.bubblewrap/config.json" <<EOF
+          {
+            "jdkPath": "${JAVA_HOME}",
+            "androidSdkPath": "${ANDROID_HOME}"
+          }
+          EOF
+
+      - name: Accept Android SDK licenses
+        run: yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+
+      - name: Build signed APK & AAB
         run: |
           printf '%s\n%s\n' "$KS_PASS" "$KEY_PASS" \
             | bubblewrap build --manifest=twa-manifest.json --skipPwaValidation
