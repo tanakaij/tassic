@@ -18,7 +18,7 @@ object Graph {
  * Reactive offline-first persistence engine.
  *
  * Architecture note: the canonical relational schema lives in
- * `src/commonMain/sqldelight/tassic/db/*.sq` (compile-time verified by the
+ * `src/commonMain/sqldelight/tassic/db` (*.sq files, compile-time verified by the
  * SQLDelight compiler plugin). At runtime on the web this store persists the
  * same typed rows to localStorage as JSON — synchronous, quota-safe for text,
  * with audio clips offloaded to IndexedDB ([AudioStore]). Swapping in the

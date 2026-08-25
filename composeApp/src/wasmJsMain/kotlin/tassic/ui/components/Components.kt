@@ -47,6 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -313,9 +314,9 @@ fun TassicProgress(percent: Float, color: Color = Blue, modifier: Modifier = Mod
 fun <T> SelectChips(
     options: List<T>,
     selected: T,
-    onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
-    label: (T) -> String = { it.toString() }
+    label: (T) -> String = { it.toString() },
+    onSelect: (T) -> Unit
 ) {
     Row(
         modifier.horizontalScroll(rememberScrollState()),

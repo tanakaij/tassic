@@ -3,6 +3,7 @@
 package tassic.platform
 
 import kotlin.js.Promise
+import kotlinx.coroutines.await
 
 /** localStorage-backed key/value persistence (offline-first PWA store). */
 fun lsGet(key: String): String? = js("localStorage.getItem(key)")

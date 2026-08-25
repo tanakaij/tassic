@@ -24,7 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import kotlin.js.JsAny
-import kotlin.js.await
+import kotlinx.coroutines.await
+import kotlinx.coroutines.launch
 import tassic.data.CareerItem
 import tassic.data.FaithRoutine
 import tassic.data.Graph

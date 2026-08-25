@@ -111,7 +111,7 @@ fun TassicSheet(
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = Color.White,
         shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
         dragHandle = {
             Box(
                 Modifier
