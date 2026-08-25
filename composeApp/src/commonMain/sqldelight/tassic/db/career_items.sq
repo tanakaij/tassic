@@ -1,0 +1,29 @@
+-- Notion-style roadmap database: multiple paths, ordered stages, linked milestones.
+CREATE TABLE career_items (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    path TEXT NOT NULL DEFAULT 'GeoDev Roadmap',
+    stage TEXT NOT NULL,
+    stageOrder INTEGER NOT NULL DEFAULT 0,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL DEFAULT '',
+    done INTEGER NOT NULL DEFAULT 0,
+    sortOrder INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL
+);
+
+insertCareerItem:
+INSERT INTO career_items(path, stage, stageOrder, title, url, done, sortOrder, createdAt)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?);
+
+updateCareerItem:
+UPDATE career_items SET path = ?, stage = ?, stageOrder = ?, title = ?, url = ?, done = ?, sortOrder = ?
+WHERE id = ?;
+
+deleteCareerItemById:
+DELETE FROM career_items WHERE id = ?;
+
+selectAllCareerItems:
+SELECT * FROM career_items ORDER BY stageOrder ASC, sortOrder ASC, id ASC;
+
+countCareerItems:
+SELECT COUNT(*) FROM career_items;

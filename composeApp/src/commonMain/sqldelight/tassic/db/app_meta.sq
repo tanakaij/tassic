@@ -1,0 +1,15 @@
+-- Key/value metadata (seed versioning, scheduler bookmarks).
+CREATE TABLE app_meta (
+    key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+upsertMeta:
+INSERT INTO app_meta(key, value) VALUES(?, ?)
+ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+
+selectMeta:
+SELECT value FROM app_meta WHERE key = ?;
+
+deleteMeta:
+DELETE FROM app_meta WHERE key = ?;

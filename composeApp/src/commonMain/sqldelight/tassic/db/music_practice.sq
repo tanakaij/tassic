@@ -1,0 +1,37 @@
+-- Generic practice ledger powering the Music Studio.
+-- section : 'guitar' | 'piano' | any custom instrument name
+-- kind    : SHAPE | SUBTASK | STYLE | SONG | MODULE | MODE | KEY
+CREATE TABLE music_practice (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    section TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    title TEXT NOT NULL,
+    detail TEXT NOT NULL DEFAULT '',
+    dayTag TEXT NOT NULL DEFAULT 'ALL',
+    parentId INTEGER,
+    targetPerWeek INTEGER NOT NULL DEFAULT 0,
+    doneEpochDay INTEGER,
+    doneCount INTEGER NOT NULL DEFAULT 0,
+    sortOrder INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL
+);
+
+insertPractice:
+INSERT INTO music_practice(section, kind, title, detail, dayTag, parentId, targetPerWeek, doneEpochDay, doneCount, sortOrder, createdAt)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updatePractice:
+UPDATE music_practice SET section = ?, kind = ?, title = ?, detail = ?, dayTag = ?, parentId = ?, targetPerWeek = ?, doneEpochDay = ?, doneCount = ?, sortOrder = ?
+WHERE id = ?;
+
+deletePracticeById:
+DELETE FROM music_practice WHERE id = ?;
+
+deletePracticeChildren:
+DELETE FROM music_practice WHERE parentId = ?;
+
+selectAllPractice:
+SELECT * FROM music_practice ORDER BY sortOrder ASC, id ASC;
+
+countPractice:
+SELECT COUNT(*) FROM music_practice;

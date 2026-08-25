@@ -1,0 +1,25 @@
+CREATE TABLE album_goals (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    album TEXT NOT NULL,
+    artist TEXT NOT NULL DEFAULT '',
+    totalTracks INTEGER NOT NULL DEFAULT 1,
+    learnedTracks INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL
+);
+
+insertAlbumGoal:
+INSERT INTO album_goals(album, artist, totalTracks, learnedTracks, createdAt)
+VALUES(?, ?, ?, ?, ?);
+
+updateAlbumGoal:
+UPDATE album_goals SET album = ?, artist = ?, totalTracks = ?, learnedTracks = ?
+WHERE id = ?;
+
+deleteAlbumGoalById:
+DELETE FROM album_goals WHERE id = ?;
+
+selectAllAlbumGoals:
+SELECT * FROM album_goals ORDER BY createdAt DESC;
+
+countAlbumGoals:
+SELECT COUNT(*) FROM album_goals;

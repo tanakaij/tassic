@@ -1,0 +1,27 @@
+CREATE TABLE wishlist_items (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'Gear',
+    price REAL NOT NULL DEFAULT 0,
+    priority TEXT NOT NULL DEFAULT 'NORMAL',
+    url TEXT NOT NULL DEFAULT '',
+    purchased INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL
+);
+
+insertWishlistItem:
+INSERT INTO wishlist_items(name, category, price, priority, url, purchased, createdAt)
+VALUES(?, ?, ?, ?, ?, ?, ?);
+
+updateWishlistItem:
+UPDATE wishlist_items SET name = ?, category = ?, price = ?, priority = ?, url = ?, purchased = ?
+WHERE id = ?;
+
+deleteWishlistItemById:
+DELETE FROM wishlist_items WHERE id = ?;
+
+selectAllWishlistItems:
+SELECT * FROM wishlist_items ORDER BY purchased ASC, createdAt DESC;
+
+countWishlistItems:
+SELECT COUNT(*) FROM wishlist_items;

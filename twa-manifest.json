@@ -1,0 +1,50 @@
+{
+    "packageId": "app.tassic.twa",
+    "host": "https://__OWNER__.github.io",
+    "name": "Tassic",
+    "launcherName": "Tassic",
+    "display": "standalone",
+    "themeColor": "#0F2B4C",
+    "themeColorDark": "#0F2B4C",
+    "navigationColor": "#0F2B4C",
+    "navigationColorDark": "#000000",
+    "navigationDividerColor": "#0F2B4C",
+    "navigationDividerColorDark": "#000000",
+    "backgroundColor": "#BBD8EC",
+    "enableNotifications": true,
+    "startUrl": "/Tassic/",
+    "iconUrl": "https://__OWNER__.github.io/Tassic/icons/icon-512.png",
+    "maskableIconUrl": "https://__OWNER__.github.io/Tassic/icons/maskable-512.png",
+    "splashScreenFadeOutDuration": 300,
+    "signing": {
+        "path": "../tassic-release.jks",
+        "alias": "tassic"
+    },
+    "appVersionName": "1.0.0",
+    "appVersionCode": 1,
+    "shortcuts": [
+        {
+            "name": "Today",
+            "short_name": "Today",
+            "url": "/Tassic/?tab=today",
+            "icons": [{ "url": "https://__OWNER__.github.io/Tassic/icons/icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "New Journal Entry",
+            "short_name": "Journal",
+            "url": "/Tassic/?tab=journal",
+            "icons": [{ "url": "https://__OWNER__.github.io/Tassic/icons/icon-192.png", "sizes": "192x192" }]
+        }
+    ],
+    "fallbackType": "customtabs",
+    "enableSiteSettingsShortcut": true,
+    "isChromeOSOnly": false,
+    "isMetaQuest": false,
+    "fullScopeUrl": "https://__OWNER__.github.io/Tassic/",
+    "minSdkVersion": 21,
+    "orientation": "default",
+    "fingerprints": [],
+    "additionalTrustedOrigins": [],
+    "retainedBundles": [],
+    "appVersion": "1"
+}

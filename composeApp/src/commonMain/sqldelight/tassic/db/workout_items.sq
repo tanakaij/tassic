@@ -1,0 +1,29 @@
+-- Editable calisthenics exercise definitions.
+CREATE TABLE workout_items (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    sets INTEGER NOT NULL DEFAULT 3,
+    reps INTEGER NOT NULL DEFAULT 10,
+    unit TEXT NOT NULL DEFAULT 'reps',
+    dayTag TEXT NOT NULL DEFAULT 'ALL',
+    doneEpochDay INTEGER,
+    sortOrder INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL
+);
+
+insertWorkoutItem:
+INSERT INTO workout_items(name, sets, reps, unit, dayTag, doneEpochDay, sortOrder, createdAt)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?);
+
+updateWorkoutItem:
+UPDATE workout_items SET name = ?, sets = ?, reps = ?, unit = ?, dayTag = ?, doneEpochDay = ?, sortOrder = ?
+WHERE id = ?;
+
+deleteWorkoutItemById:
+DELETE FROM workout_items WHERE id = ?;
+
+selectAllWorkoutItems:
+SELECT * FROM workout_items ORDER BY sortOrder ASC, id ASC;
+
+countWorkoutItems:
+SELECT COUNT(*) FROM workout_items;

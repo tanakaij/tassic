@@ -1,0 +1,26 @@
+CREATE TABLE recovery_tracker (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    startEpochDay INTEGER NOT NULL,
+    bestStreak INTEGER NOT NULL DEFAULT 0,
+    relapses INTEGER NOT NULL DEFAULT 0,
+    active INTEGER NOT NULL DEFAULT 1,
+    createdAt INTEGER NOT NULL
+);
+
+insertRecoveryHabit:
+INSERT INTO recovery_tracker(name, startEpochDay, bestStreak, relapses, active, createdAt)
+VALUES(?, ?, ?, ?, ?, ?);
+
+updateRecoveryHabit:
+UPDATE recovery_tracker SET name = ?, startEpochDay = ?, bestStreak = ?, relapses = ?, active = ?
+WHERE id = ?;
+
+deleteRecoveryHabitById:
+DELETE FROM recovery_tracker WHERE id = ?;
+
+selectAllRecoveryHabits:
+SELECT * FROM recovery_tracker ORDER BY createdAt ASC;
+
+countRecoveryHabits:
+SELECT COUNT(*) FROM recovery_tracker;

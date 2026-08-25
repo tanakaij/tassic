@@ -1,0 +1,22 @@
+-- Append-only workout completion log (powers daily streaks).
+CREATE TABLE workout_logs (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    sets INTEGER NOT NULL,
+    reps INTEGER NOT NULL,
+    unit TEXT NOT NULL DEFAULT 'reps',
+    loggedAt INTEGER NOT NULL
+);
+
+insertWorkoutLog:
+INSERT INTO workout_logs(name, sets, reps, unit, loggedAt)
+VALUES(?, ?, ?, ?, ?);
+
+deleteWorkoutLogById:
+DELETE FROM workout_logs WHERE id = ?;
+
+selectAllWorkoutLogs:
+SELECT * FROM workout_logs ORDER BY loggedAt DESC;
+
+countWorkoutLogs:
+SELECT COUNT(*) FROM workout_logs;

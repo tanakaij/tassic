@@ -1,0 +1,24 @@
+-- Generic habit event log: relapses, resets, clean milestones.
+CREATE TABLE habit_logs (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    habitId INTEGER NOT NULL,
+    event TEXT NOT NULL,
+    triggerNote TEXT NOT NULL DEFAULT '',
+    loggedAt INTEGER NOT NULL
+);
+
+insertHabitLog:
+INSERT INTO habit_logs(habitId, event, triggerNote, loggedAt)
+VALUES(?, ?, ?, ?);
+
+deleteHabitLogById:
+DELETE FROM habit_logs WHERE id = ?;
+
+selectLogsForHabit:
+SELECT * FROM habit_logs WHERE habitId = ? ORDER BY loggedAt DESC;
+
+selectAllHabitLogs:
+SELECT * FROM habit_logs ORDER BY loggedAt DESC;
+
+countHabitLogs:
+SELECT COUNT(*) FROM habit_logs;

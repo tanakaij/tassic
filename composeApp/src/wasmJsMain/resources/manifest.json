@@ -1,0 +1,47 @@
+{
+    "id": "./",
+    "name": "Tassic — Unified Life OS",
+    "short_name": "Tassic",
+    "description": "A unified life management OS: goals, music studio, recovery tracking, calisthenics, career roadmaps, faith routines and a multimodal journal.",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#BBD8EC",
+    "theme_color": "#0F2B4C",
+    "categories": ["productivity", "lifestyle", "health", "education"],
+    "icons": [
+        {
+            "src": "icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icons/maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Today",
+            "short_name": "Today",
+            "url": "./?tab=today",
+            "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "New Journal Entry",
+            "short_name": "Journal",
+            "url": "./?tab=journal",
+            "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+        }
+    ]
+}
