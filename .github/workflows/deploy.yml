@@ -46,8 +46,10 @@ jobs:
     needs: deploy-pages
     runs-on: ubuntu-latest
     env:
-      KS_PASS: ${{ secrets.KEYSTORE_PASSWORD || 'tassic123' }}
-      KEY_PASS: ${{ secrets.KEY_PASSWORD || 'tassic123' }}
+      # Bubblewrap reads passwords from these exact env var names (not arbitrary ones) —
+      # setting them makes `bubblewrap build` skip its interactive password prompts entirely.
+      BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'tassic123' }}
+      BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'tassic123' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -77,7 +79,7 @@ jobs:
             echo "No ANDROID_KEYSTORE_B64 secret — generating a fresh keystore"
             keytool -genkeypair -v -keystore tassic-release.jks -alias tassic \
               -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass "$KS_PASS" -keypass "$KEY_PASS" \
+              -storepass "$BUBBLEWRAP_KEYSTORE_PASSWORD" -keypass "$BUBBLEWRAP_KEY_PASSWORD" \
               -dname "CN=Tassic, OU=Mobile, O=Tassic, L=Internet, S=Internet, C=US"
           fi
 
@@ -86,6 +88,12 @@ jobs:
 
       - name: Pre-configure Bubblewrap (skip interactive JDK/SDK wizard)
         run: |
+          if [ -z "$JAVA_HOME" ] || [ -z "$ANDROID_HOME" ]; then
+            echo "::error::JAVA_HOME or ANDROID_HOME is empty — cannot pre-configure Bubblewrap."
+            echo "JAVA_HOME=$JAVA_HOME"
+            echo "ANDROID_HOME=$ANDROID_HOME"
+            exit 1
+          fi
           mkdir -p "$HOME/.bubblewrap"
           cat > "$HOME/.bubblewrap/config.json" <<EOF
           {
@@ -93,14 +101,20 @@ jobs:
             "androidSdkPath": "${ANDROID_HOME}"
           }
           EOF
+          echo "Wrote config:"
+          cat "$HOME/.bubblewrap/config.json"
 
       - name: Accept Android SDK licenses
         run: yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
+      - name: Generate/refresh the Android TWA project (non-interactive)
+        # `update` builds the project + manifest-checksum.txt directly, with no
+        # confirmation prompts. Running this first means the later `build` step
+        # finds a matching checksum and skips its "apply changes?" prompts too.
+        run: bubblewrap update --manifest="$(pwd)/twa-manifest.json" --skipVersionUpgrade
+
       - name: Build signed APK & AAB
-        run: |
-          printf '%s\n%s\n' "$KS_PASS" "$KEY_PASS" \
-            | bubblewrap build --manifest=twa-manifest.json --skipPwaValidation
+        run: bubblewrap build --manifest="$(pwd)/twa-manifest.json" --skipVersionUpgrade
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
