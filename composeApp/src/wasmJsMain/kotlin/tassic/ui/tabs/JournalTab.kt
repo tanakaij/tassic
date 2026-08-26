@@ -11,7 +11,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoStories
@@ -69,13 +72,26 @@ fun JournalTab() {
     var composerOpen by rememberState(false)
     var composerEdit by rememberState<JournalEntry?>(null)
 
+    // Segmented view switcher, same pattern as the other tabs — but only
+    // when there's actually a second view to switch to. With no habits
+    // tracked there's no Recovery History section at all (see below), so
+    // showing a switcher with a single "Journal" pill would just be noise.
+    var view by rememberState("Journal")
+    val hasRecovery = habits.isNotEmpty()
+
     TabScaffold(
         fabIcon = Icons.Filled.Add,
         fabLabel = "New Entry",
         onFab = { composerEdit = null; composerOpen = true }
     ) {
+        if (hasRecovery) {
+            SelectChips(listOf("Journal", "Recovery"), view) { view = it }
+        }
+        val showJournal = !hasRecovery || view == "Journal"
+        val showRecovery = hasRecovery && view == "Recovery"
+
         // ---- Recovery history ------------------------------------------------
-        if (habits.isNotEmpty()) {
+        if (showRecovery) {
             SectionHeader("Recovery History", "Streaks & trigger reflections")
             habits.forEach { h ->
                 RecoveryHistoryCard(
@@ -86,6 +102,7 @@ fun JournalTab() {
         }
 
         // ---- Entries -----------------------------------------------------------
+        if (showJournal) {
         SectionHeader("Journal", "${entries.size} multimodal entries")
         SelectChips(listOf("All", "Voice", "Text"), filter) { filter = it }
         val filtered = entries.filter {
@@ -108,6 +125,7 @@ fun JournalTab() {
                 onEdit = { composerEdit = e; composerOpen = true },
                 onDelete = { store.deleteJournal(e) }
             )
+        }
         }
 
         // ---- Sheet ---------------------------------------------------------------
@@ -138,7 +156,7 @@ private fun RecoveryHistoryCard(habit: RecoveryHabit, logs: List<HabitLog>) {
             modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
         )
         if (logs.isEmpty()) {
-            Text("No relapses logged — keep going.", style = MaterialTheme.typography.bodySmall, color = Green)
+            Text("No relapses logged - keep going.", style = MaterialTheme.typography.bodySmall, color = Green)
         } else {
             logs.take(6).forEach { log ->
                 Row(modifier = Modifier.padding(vertical = 4.dp)) {
@@ -231,7 +249,16 @@ private fun RichBody(body: String, modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(top = 4.dp)
                 )
                 line.startsWith("- ") -> Row {
-                    Text("•  ", style = MaterialTheme.typography.bodyMedium, color = Muted)
+                    // Drawn as a shape rather than a "•" glyph: bundled fonts on the
+                    // web/wasm target don't reliably cover the bullet code point, which
+                    // rendered as a tofu box.
+                    Box(
+                        Modifier
+                            .padding(top = 8.dp, end = 8.dp)
+                            .size(5.dp)
+                            .clip(CircleShape)
+                            .background(Muted)
+                    )
                     Text(
                         line.removePrefix("- "),
                         style = MaterialTheme.typography.bodyMedium, color = Ink

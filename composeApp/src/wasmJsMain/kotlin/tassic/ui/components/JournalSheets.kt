@@ -108,7 +108,7 @@ fun PrayerSheet(edit: PrayerPoint?, onDismiss: () -> Unit) {
         LabeledField(title, { title = it }, "Prayer request", placeholder = "What are you believing for?")
         FieldLabel("Details")
         LabeledField(details, { details = it }, "Details", singleLine = false, minLines = 3)
-        LabeledField(category, { category = it }, "Category", placeholder = "Family, Health, Work…")
+        LabeledField(category, { category = it }, "Category", placeholder = "Family, Health, Work...")
         SheetActions(
             onSave = {
                 val base = edit ?: PrayerPoint(createdAt = T.now())
@@ -139,11 +139,11 @@ fun WishSheet(edit: WishItem?, onDismiss: () -> Unit) {
 
     TassicSheet(title = if (edit == null) "New Wishlist Item" else "Edit Item", onDismiss = onDismiss) {
         LabeledField(name, { name = it }, "Item", placeholder = "e.g. Audio interface (2-in)")
-        LabeledField(category, { category = it }, "Category", placeholder = "Gear, Electronics, License…")
+        LabeledField(category, { category = it }, "Category", placeholder = "Gear, Electronics, License...")
         LabeledField(price, { price = it.filter { c -> c.isDigit() || c == '.' } }, "Target price")
         FieldLabel("Priority")
         SelectChips(Priority.entries.toList(), priority) { priority = it }
-        LabeledField(url, { url = it }, "Product link (optional)", placeholder = "https://…")
+        LabeledField(url, { url = it }, "Product link (optional)", placeholder = "https://...")
         SheetActions(
             onSave = {
                 val base = edit ?: WishItem(createdAt = T.now())
@@ -187,7 +187,7 @@ fun MilestoneSheet(
         LabeledField(stage, { stage = it }, "Stage", placeholder = "e.g. Stage 1 · Web Fundamentals")
         Stepper("Stage order", stageOrder, { stageOrder = it }, range = 1..50)
         LabeledField(title, { title = it }, "Milestone", placeholder = "e.g. Build a Leaflet choropleth")
-        LabeledField(url, { url = it }, "Resource link (optional)", placeholder = "https://…")
+        LabeledField(url, { url = it }, "Resource link (optional)", placeholder = "https://...")
         SheetActions(
             onSave = {
                 val base = edit ?: CareerItem(createdAt = T.now(), sortOrder = 99)
@@ -243,7 +243,7 @@ fun JournalComposerSheet(
             }
             val c = AudioRecorder.start(mime).awaitOrNull()
             if (c == null) {
-                feedback.launchSnackbar("Microphone unavailable — check permission")
+                feedback.launchSnackbar("Microphone unavailable - check permission")
                 return@launch
             }
             controller = c
@@ -308,10 +308,10 @@ fun JournalComposerSheet(
     TassicSheet(title = if (edit == null) "New Journal Entry" else "Edit Entry", onDismiss = onDismiss) {
         LabeledField(title, { title = it }, "Title", placeholder = "Name this moment")
         FieldLabel("Reflection (# heading, - bullet supported)")
-        LabeledField(body, { body = it }, "Write freely…", singleLine = false, minLines = 6)
+        LabeledField(body, { body = it }, "Write freely...", singleLine = false, minLines = 6)
         FieldLabel("Mood today")
         MoodPicker(mood) { mood = it }
-        LabeledField(tags, { tags = it }, "Tags", placeholder = "gratitude, portfolio…")
+        LabeledField(tags, { tags = it }, "Tags", placeholder = "gratitude, portfolio...")
 
         FieldLabel("Voice note")
         VoiceRecorderBlock(

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -109,7 +110,7 @@ fun LifeTab() {
                     EmptyState(
                         icon = Icons.Filled.ShoppingBag,
                         title = "Wishlist is empty",
-                        hint = "Gear, electronics, licenses — plan the buys."
+                        hint = "Gear, electronics, licenses - plan the buys."
                     )
                 }
                 TassicCard {
@@ -170,7 +171,11 @@ fun LifeTab() {
                             Pill("${(overall * 100).toInt()}%", bg = Green.copy(alpha = 0.15f), fg = Green)
                         }
                         TassicProgress(overall, color = Green, modifier = Modifier.padding(top = 8.dp))
-                        GhostButton("Log build progress → Journal", { journalOpen = true })
+                        GhostButton(
+                            "Log build progress in Journal",
+                            { journalOpen = true },
+                            trailingIcon = Icons.AutoMirrored.Filled.ArrowForward
+                        )
                     }
 
                     val stages = inPath
@@ -243,7 +248,7 @@ fun LifeTab() {
                     EmptyState(
                         icon = Icons.Filled.Flag,
                         title = "No goals yet",
-                        hint = "Dream in horizons — add your first goal."
+                        hint = "Dream in horizons - add your first goal."
                     )
                 }
                 goals.forEach { g ->

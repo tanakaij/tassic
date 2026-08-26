@@ -7,8 +7,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoStories
@@ -39,8 +42,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -61,6 +62,8 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
@@ -79,14 +82,18 @@ import tassic.platform.queryParam
 import tassic.ui.components.LocalSnackbar
 import tassic.ui.components.AmbientBackground
 import tassic.ui.components.Pill
+import tassic.ui.components.softBlob
 import tassic.ui.tabs.FaithTab
 import tassic.ui.tabs.JournalTab
 import tassic.ui.tabs.LifeTab
 import tassic.ui.tabs.MusicTab
 import tassic.ui.tabs.TodayTab
 import tassic.ui.theme.Amber
+import tassic.ui.theme.BlueBright
+import tassic.ui.theme.Coral
 import tassic.ui.theme.Muted
 import tassic.ui.theme.Navy
+import tassic.ui.theme.NavySoft
 import tassic.ui.theme.TassicTheme
 
 enum class Tab(val label: String, val icon: ImageVector) {
@@ -257,52 +264,164 @@ fun TassicLogo(modifier: Modifier = Modifier) {
 @Composable
 private fun TassicDrawerContent(current: Tab, onSelect: (Tab) -> Unit) {
     ModalDrawerSheet(
-        drawerContainerColor = Navy,
+        drawerContainerColor = Color.Transparent,
         modifier = Modifier.windowInsetsPadding(WindowInsets.displayCutout)
     ) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(vertical = 12.dp)
-        ) {
-            Row(
+        Box(Modifier.fillMaxSize()) {
+            DrawerBackdrop(Modifier.fillMaxSize())
+            Column(
                 Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(vertical = 12.dp)
             ) {
-                TassicLogo(Modifier.size(36.dp))
-                Spacer(Modifier.width(10.dp))
-                Text("Tassic", style = MaterialTheme.typography.titleLarge, color = Color.White)
-            }
-            Spacer(Modifier.height(8.dp))
-            Tab.entries.forEach { tab ->
-                val selected = tab == current
-                NavigationDrawerItem(
-                    icon = {
-                        Icon(
-                            tab.icon,
-                            contentDescription = null,
-                            tint = if (selected) Amber else Color.White.copy(alpha = 0.72f)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        Modifier
+                            .size(46.dp)
+                            .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
+                            .padding(5.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        TassicLogo(Modifier.size(36.dp))
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text("Tassic", style = MaterialTheme.typography.titleLarge, color = Color.White)
+                        Text(
+                            "Unified Life OS",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White.copy(alpha = 0.6f)
                         )
-                    },
-                    label = {
+                    }
+                }
+
+                // Soft gradient hairline instead of a flat divider — matches the
+                // faded-edge language of the ambient backdrop rather than a hard rule.
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(1.dp)
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color.Transparent, Color.White.copy(alpha = 0.18f), Color.Transparent)
+                            )
+                        )
+                )
+                Spacer(Modifier.height(12.dp))
+
+                Tab.entries.forEach { tab ->
+                    val selected = tab == current
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 3.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .then(
+                                if (selected) {
+                                    Modifier.background(
+                                        Brush.horizontalGradient(
+                                            listOf(Amber.copy(alpha = 0.22f), Amber.copy(alpha = 0.05f))
+                                        )
+                                    )
+                                } else Modifier
+                            )
+                            .clickable { onSelect(tab) }
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            Modifier
+                                .size(34.dp)
+                                .background(
+                                    if (selected) Amber.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.08f),
+                                    RoundedCornerShape(10.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                tab.icon,
+                                contentDescription = null,
+                                tint = if (selected) Navy else Color.White.copy(alpha = 0.72f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(14.dp))
                         Text(
                             tab.label,
+                            style = if (selected) {
+                                MaterialTheme.typography.titleSmall
+                            } else {
+                                MaterialTheme.typography.bodyLarge
+                            },
                             color = if (selected) Color.White else Color.White.copy(alpha = 0.72f)
                         )
-                    },
-                    selected = selected,
-                    onClick = { onSelect(tab) },
-                    colors = NavigationDrawerItemDefaults.colors(
-                        selectedContainerColor = Amber.copy(alpha = 0.16f),
-                        unselectedContainerColor = Color.Transparent
-                    ),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                        if (selected) {
+                            Spacer(Modifier.weight(1f))
+                            Box(
+                                Modifier
+                                    .size(6.dp)
+                                    .background(Amber, CircleShape)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.weight(1f))
+
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(1.dp)
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color.Transparent, Color.White.copy(alpha = 0.14f), Color.Transparent)
+                            )
+                        )
+                )
+                Text(
+                    "Tassic \u00b7 v1.0",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.35f),
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)
                 )
             }
         }
+    }
+}
+
+/**
+ * Textured navy backdrop for the drawer: a diagonal tonal gradient plus a
+ * couple of soft, fixed glow blobs (amber + blue, on-brand) so the drawer no
+ * longer reads as a flat single-colour panel — same faded-radial-gradient
+ * technique as [AmbientBackground], but static (no animation) since the
+ * drawer stays composed off-screen for the slide transition and doesn't
+ * need to keep spending frames while closed.
+ */
+@Composable
+private fun DrawerBackdrop(modifier: Modifier = Modifier) {
+    Canvas(modifier.background(Navy)) {
+        val w = size.width
+        val h = size.height
+        val diag = kotlin.math.hypot(w, h)
+
+        drawRect(
+            brush = Brush.linearGradient(
+                colors = listOf(Navy, NavySoft, Color(0xFF08192E)),
+                start = Offset(0f, 0f),
+                end = Offset(w, h)
+            )
+        )
+        softBlob(Offset(w * 0.85f, h * 0.06f), diag * 0.40f, Amber, 0.16f)
+        softBlob(Offset(w * 0.05f, h * 0.85f), diag * 0.45f, BlueBright, 0.14f)
+        softBlob(Offset(w * 0.15f, h * 0.15f), diag * 0.30f, Coral, 0.08f)
     }
 }

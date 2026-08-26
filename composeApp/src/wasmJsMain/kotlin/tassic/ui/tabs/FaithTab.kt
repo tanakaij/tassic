@@ -44,6 +44,7 @@ import tassic.ui.components.SecondaryButton
 import tassic.ui.components.rememberSheetScope
 import tassic.ui.components.rememberState
 import tassic.ui.components.SectionHeader
+import tassic.ui.components.SelectChips
 import tassic.ui.components.TabScaffold
 import tassic.ui.components.TassicCard
 import tassic.ui.components.PrayerSheet
@@ -90,18 +91,39 @@ fun FaithTab() {
     val active = prayers.filter { !it.answered }
     val answered = prayers.filter { it.answered }.sortedByDescending { it.answeredAt ?: 0 }
 
+    // Segmented view switcher, same pattern as Life & Goals / Music / Today:
+    // Routines, Reminders and Prayer were three separately-scrolled sections
+    // stacked on one screen. "Reminders" only earns its own segment once
+    // there's a routine to trigger a reminder for; otherwise there's nothing
+    // there for it to show yet.
+    var view by rememberState("Routines")
+    val views = (
+        listOf("Routines") +
+            (if (routines.isNotEmpty()) listOf("Reminders") else emptyList()) +
+            listOf("Prayer")
+        )
+    if (view !in views) view = "Routines"
+    val viewCounts = mapOf(
+        "Routines" to "${routines.size}",
+        "Reminders" to if (perm == "granted") "on" else "off",
+        "Prayer" to "${active.size}"
+    )
+
     TabScaffold(
-        fabIcon = Icons.Filled.Add,
-        fabLabel = "New Prayer",
-        onFab = { prayerEdit = null; prayerOpen = true }
+        fabIcon = if (view == "Prayer") Icons.Filled.Add else null,
+        fabLabel = if (view == "Prayer") "New Prayer" else null,
+        onFab = if (view == "Prayer") ({ prayerEdit = null; prayerOpen = true }) else null
     ) {
+        SelectChips(views, view, label = { "$it (${viewCounts[it]})" }) { view = it }
+
         // ---- Routines -------------------------------------------------------
+        if (view == "Routines") {
         SectionHeader("Rhythms & Routines", "Fasting · reading · mountain trips")
         if (routines.isEmpty()) {
             EmptyState(
                 icon = Icons.Filled.Church,
                 title = "No routines",
-                hint = "Add Daily Bible Reading, Thursday Fasting…",
+                hint = "Add Daily Bible Reading, Thursday Fasting...",
                 actionText = "+ Add routine",
                 onAction = { routineEdit = null; routineOpen = true }
             )
@@ -156,8 +178,10 @@ fun FaithTab() {
         if (routines.isNotEmpty()) {
             GhostButton("+ Add another routine", { routineEdit = null; routineOpen = true })
         }
+        }
 
         // ---- Notifications ------------------------------------------------------
+        if (view == "Reminders") {
         TassicCard {
             SectionHeader("Reminder Triggers", "Web Notification API + sw.js push")
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -187,8 +211,10 @@ fun FaithTab() {
                 GhostButton("Send test notification", { Notifications.show("Tassic", "Reminders are alive.") })
             }
         }
+        }
 
         // ---- Prayer points ---------------------------------------------------------
+        if (view == "Prayer") {
         SectionHeader("Prayer Points", "${active.size} active · ${answered.size} answered")
         if (active.isEmpty() && answered.isEmpty()) {
             EmptyState(
@@ -241,6 +267,7 @@ fun FaithTab() {
                     }
                 }
             }
+        }
         }
 
         // ---- Sheets --------------------------------------------------------------

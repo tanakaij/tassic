@@ -1,5 +1,7 @@
-/* Tassic service worker — offline app shell, runtime caching, Web Push. */
-const CACHE = 'tassic-cache-v1';
+/* Tassic service worker - offline app shell, runtime caching, Web Push. */
+// Bumped so every existing install picks up the shell-precache fix below
+// (SW updates are keyed off byte-for-byte changes to this file).
+const CACHE = 'tassic-cache-v2';
 
 const SHELL = [
     './',
@@ -12,7 +14,26 @@ const SHELL = [
     './icons/maskable-512.png',
     './icons/favicon.png',
     './widgets/today-widget-template.json',
-    './widgets/today-widget-data.json'
+    './widgets/today-widget-data.json',
+    // The compiled Compose/Wasm app itself. Previously missing from this
+    // list, which caused a real "can't open the app offline" bug: the
+    // service worker only starts controlling fetches *after* it activates
+    // (`clients.claim()`), which happens after the very first page's own
+    // <script> requests for these files have already gone out uncontrolled.
+    // On a device that is installed once and never fully reloaded online
+    // again, that meant the app shell's own JS/Wasm binaries never made it
+    // into the cache at all - so the first fully-offline open just hung on
+    // the splash screen forever (reported as "can't log into the app").
+    // Precaching them explicitly here means the SW fetches and caches them
+    // itself during `install`, independent of page/client timing.
+    // Filenames are the stable ones the toolchain/index.html actually use
+    // (see composeApp/build.gradle.kts `outputFileName` and index.html);
+    // any entry that doesn't exist for a given build is skipped safely by
+    // Promise.allSettled below rather than failing the whole install.
+    './skiko.js',
+    './skiko.wasm',
+    './composeApp.js',
+    './composeApp.wasm'
 ];
 
 self.addEventListener('install', (event) => {

@@ -140,7 +140,7 @@ fun TassicSheet(
         ) {
             Text(title, style = MaterialTheme.typography.headlineSmall, color = Navy)
             Text(
-                "Every preset is editable — change anything, or delete it and add your own.",
+                "Every preset is editable - change anything, or delete it and add your own.",
                 style = MaterialTheme.typography.bodySmall,
                 color = Muted,
                 modifier = Modifier.padding(top = 2.dp, bottom = 14.dp)
@@ -273,7 +273,7 @@ fun TodoSheet(edit: TodoItem?, onDismiss: () -> Unit) {
             SelectChips(ReminderLead.entries.toList(), reminder, label = { it.label }) { reminder = it }
             if (reminder != ReminderLead.NONE && tassic.platform.Notifications.permission() != "granted") {
                 Text(
-                    "Notifications aren't enabled yet — turn them on from the Faith tab so this reminder can actually alert you.",
+                    "Notifications aren't enabled yet - turn them on from the Faith tab so this reminder can actually alert you.",
                     style = MaterialTheme.typography.bodySmall,
                     color = Coral,
                     modifier = Modifier.padding(top = 4.dp)
@@ -341,8 +341,8 @@ fun GoalSheet(edit: GoalItem?, onDismiss: () -> Unit) {
         LabeledField(description, { description = it }, "Description", singleLine = false, minLines = 2)
         FieldLabel("Horizon")
         SelectChips(Horizon.entries.toList(), horizon) { horizon = it }
-        LabeledField(category, { category = it }, "Category", placeholder = "Career, Music, Health…")
-        FieldLabel("Progress — $progress%")
+        LabeledField(category, { category = it }, "Category", placeholder = "Career, Music, Health...")
+        FieldLabel("Progress - $progress%")
         Stepper("Progress", progress, { progress = it }, range = 0..100, suffix = "%")
         FieldLabel("Target date")
         SelectChips(listOf(0, 30, 90, 180, 365), targetChoice, label = {
@@ -448,8 +448,8 @@ fun RelapseSheet(habit: RecoveryHabit, onDismiss: () -> Unit) {
             saveLabel = "Log & reset",
             destructive = true,
             onSave = {
-                store.logRelapse(habit, trigger.trim() + if (reflection.isNotBlank()) " — " + reflection.trim() else "")
-                scope.launchSnackbar("Relapse logged. Day 1 starts now — you've got this.")
+                store.logRelapse(habit, trigger.trim() + if (reflection.isNotBlank()) " - " + reflection.trim() else "")
+                scope.launchSnackbar("Relapse logged. Day 1 starts now - you've got this.")
                 onDismiss()
             },
             onCancel = onDismiss,
@@ -533,7 +533,7 @@ fun PracticeItemSheet(
         FieldLabel("Detail")
         LabeledField(detail, { detail = it }, "Detail", singleLine = false, minLines = 2)
         FieldLabel("Instrument / section")
-        LabeledField(section, { section = it }, "Section", placeholder = "guitar, piano, bass…")
+        LabeledField(section, { section = it }, "Section", placeholder = "guitar, piano, bass...")
         FieldLabel("Type")
         SelectChips(listOf(PracticeKind.SHAPE, PracticeKind.STYLE, PracticeKind.MODULE), kind) { kind = it }
         FieldLabel("Scheduled day")

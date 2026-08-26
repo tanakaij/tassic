@@ -26,7 +26,7 @@ private fun jsShow(title: String, body: String): Unit = js(
             data: { url: './' }
         };
         // Inside a TWA, Android's notification delegation only intercepts
-        // notifications shown via the service worker's registration —
+        // notifications shown via the service worker's registration -
         // a plain `new Notification()` from page context is not delegated
         // to the real Android notification tray and silently does nothing.
         // sw.js already exposes the matching self.registration.showNotification

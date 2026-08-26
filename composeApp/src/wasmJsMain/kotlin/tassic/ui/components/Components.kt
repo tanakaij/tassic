@@ -210,9 +210,21 @@ fun SecondaryButton(
 }
 
 @Composable
-fun GhostButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun GhostButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    // Drawn as a vector icon rather than a "→" glyph in the label: the bundled
+    // web/wasm font doesn't reliably cover Arrows-block code points, which
+    // rendered as a tofu box in place of the arrow.
+    trailingIcon: ImageVector? = null
+) {
     TextButton(onClick = onClick, modifier = modifier) {
         Text(text, color = Blue, style = MaterialTheme.typography.labelLarge)
+        if (trailingIcon != null) {
+            Spacer(Modifier.width(4.dp))
+            Icon(trailingIcon, contentDescription = null, tint = Blue, modifier = Modifier.size(16.dp))
+        }
     }
 }
 

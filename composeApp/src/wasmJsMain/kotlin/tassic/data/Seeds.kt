@@ -11,7 +11,7 @@ object Seeds {
 
     fun todos(): List<TodoItem> = listOf(
         TodoItem(
-            id = 1, title = "Personalize Tassic", notes = "Edit or delete any preset — they are yours now.",
+            id = 1, title = "Personalize Tassic", notes = "Edit or delete any preset - they are yours now.",
             priority = Priority.NORMAL, tags = listOf("setup"), createdAt = ts()
         ),
         TodoItem(
@@ -32,7 +32,7 @@ object Seeds {
             targetEpochDay = T.today() + 180, createdAt = ts()
         ),
         GoalItem(
-            id = 3, title = "Record a gospel album", description = "12 tracks — keys, guitar, aux textures.",
+            id = 3, title = "Record a gospel album", description = "12 tracks - keys, guitar, aux textures.",
             horizon = Horizon.LONG, category = "Music", progress = 10,
             targetEpochDay = T.today() + 365, createdAt = ts()
         )
@@ -48,11 +48,11 @@ object Seeds {
 
         // ---- CAGED weekly schedule (guitar) ----
         val caged = listOf(
-            Triple("D Shape", "MON", "Daily CAGED focus — D shape"),
-            Triple("C Shape", "TUE", "Daily CAGED focus — C shape"),
-            Triple("A Shape", "WED", "Daily CAGED focus — A shape"),
-            Triple("G Shape", "THU", "Daily CAGED focus — G shape"),
-            Triple("E Shape", "FRI", "Daily CAGED focus — E shape")
+            Triple("D Shape", "MON", "Daily CAGED focus - D shape"),
+            Triple("C Shape", "TUE", "Daily CAGED focus - C shape"),
+            Triple("A Shape", "WED", "Daily CAGED focus - A shape"),
+            Triple("G Shape", "THU", "Daily CAGED focus - G shape"),
+            Triple("E Shape", "FRI", "Daily CAGED focus - E shape")
         )
         val subtasks = listOf("Scales", "Arpeggios", "Diatonic Chords", "Triads", "Open Chords")
         caged.forEach { (title, day, detail) ->
@@ -70,7 +70,7 @@ object Seeds {
         }
         rows += PracticeItem(
             id = nextId(), section = "guitar", kind = PracticeKind.SHAPE,
-            title = "Song Application & Style Study", detail = "Weekend consolidation — apply shapes to real music",
+            title = "Song Application & Style Study", detail = "Weekend consolidation - apply shapes to real music",
             dayTag = "WEEKEND", sortOrder = order++, createdAt = now
         )
 
@@ -151,7 +151,7 @@ object Seeds {
 
         stage("Web Fundamentals", 1, listOf(
             "HTML & semantic structure" to "https://developer.mozilla.org/en-US/docs/Learn/HTML",
-            "CSS layout — Flexbox & Grid" to "https://web.dev/learn/css/",
+            "CSS layout - Flexbox & Grid" to "https://web.dev/learn/css/",
             "JavaScript essentials" to "https://javascript.info/",
             "Kotlin/Wasm & WebAssembly basics" to "https://kotlinlang.org/docs/wasm-overview.html"
         ))
@@ -169,10 +169,10 @@ object Seeds {
         stage("Spatial Databases", 4, listOf(
             "PostgreSQL fundamentals" to "https://www.postgresql.org/docs/current/tutorial.html",
             "PostGIS spatial queries workshop" to "https://postgis.net/workshops/postgis-intro/",
-            "Spatial SQL — joins, indexes, tuning" to "https://postgis.net/documentation/"
+            "Spatial SQL - joins, indexes, tuning" to "https://postgis.net/documentation/"
         ))
         stage("Cloud Remote Sensing", 5, listOf(
-            "Google Earth Engine — JS API" to "https://developers.google.com/earth-engine/tutorials/tutorial_js_01",
+            "Google Earth Engine - JS API" to "https://developers.google.com/earth-engine/tutorials/tutorial_js_01",
             "GEE Python API with geemap" to "https://geemap.org/",
             "Earth Engine data catalogs" to "https://developers.google.com/earth-engine/datasets"
         ))

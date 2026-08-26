@@ -107,7 +107,7 @@ fun AmbientBackground(modifier: Modifier = Modifier) {
 }
 
 /** Draws one colour patch as a radial gradient fading fully to transparent — no hard edge to blur away. */
-private fun DrawScope.softBlob(center: Offset, radius: Float, color: Color, alpha: Float) {
+internal fun DrawScope.softBlob(center: Offset, radius: Float, color: Color, alpha: Float) {
     drawRect(
         brush = Brush.radialGradient(
             colors = listOf(color.copy(alpha = alpha), color.copy(alpha = 0f)),

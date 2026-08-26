@@ -113,7 +113,7 @@ fun MusicTab() {
 
         // ---- Shape system (CAGED & custom) --------------------------------
         TassicCard {
-            SectionHeader("Shape System", "Daily schedule — tap a row to expand")
+            SectionHeader("Shape System", "Daily schedule - tap a row to expand")
             if (shapes.isEmpty()) {
                 EmptyState(
                     icon = Icons.Filled.MusicNote,
@@ -193,7 +193,7 @@ fun MusicTab() {
         TassicCard {
             SectionHeader("Style Trackers", "Fills, runs & feel drills")
             if (styles.isEmpty()) {
-                Text("No style trackers — add one via the FAB.", style = MaterialTheme.typography.bodySmall, color = Muted)
+                Text("No style trackers - add one via the FAB.", style = MaterialTheme.typography.bodySmall, color = Muted)
             }
             styles.forEach { st ->
                 var menu by rememberState(false)
@@ -244,7 +244,7 @@ fun MusicTab() {
         // ---- Piano: modes + 12 keys ---------------------------------------------
         if (active == "piano" && modes.isNotEmpty()) {
             TassicCard {
-                SectionHeader("Daily Mode Rotation", "Ionian → Locrian; today is highlighted")
+                SectionHeader("Daily Mode Rotation", "Ionian to Locrian - today's mode is highlighted")
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.horizontalScroll(rememberScrollState())
@@ -270,7 +270,7 @@ fun MusicTab() {
         }
         if (active == "piano" && keys.isNotEmpty()) {
             TassicCard {
-                SectionHeader("12-Key Cycle", "Weekly distribution — focus key is ringed")
+                SectionHeader("12-Key Cycle", "Weekly distribution - focus key is ringed")
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -294,7 +294,7 @@ fun MusicTab() {
         TassicCard {
             SectionHeader("Advanced Modules", "Preacher chords · tritones · voicings")
             if (modules.isEmpty()) {
-                Text("No modules — add one via the FAB.", style = MaterialTheme.typography.bodySmall, color = Muted)
+                Text("No modules - add one via the FAB.", style = MaterialTheme.typography.bodySmall, color = Muted)
             }
             modules.forEach { m ->
                 var menu by rememberState(false)
