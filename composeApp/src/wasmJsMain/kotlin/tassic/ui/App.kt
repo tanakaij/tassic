@@ -9,7 +9,6 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,15 +30,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Church
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Piano
 import androidx.compose.material.icons.filled.Today
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +54,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,6 +76,7 @@ import tassic.platform.fetchAsDataUrl
 import tassic.platform.hideSplash
 import tassic.platform.queryParam
 import tassic.ui.components.LocalSnackbar
+import tassic.ui.components.AmbientBackground
 import tassic.ui.components.Pill
 import tassic.ui.tabs.FaithTab
 import tassic.ui.tabs.JournalTab
@@ -76,7 +86,6 @@ import tassic.ui.tabs.TodayTab
 import tassic.ui.theme.Amber
 import tassic.ui.theme.Muted
 import tassic.ui.theme.Navy
-import tassic.ui.theme.SkyBlue
 import tassic.ui.theme.TassicTheme
 
 enum class Tab(val label: String, val icon: ImageVector) {
@@ -99,6 +108,8 @@ fun App() {
         val store = remember { Graph.store }
         val snackbar = remember { SnackbarHostState() }
         var tab by remember { mutableStateOf(initialTab()) }
+        val drawerState = rememberDrawerState(DrawerValue.Closed)
+        val scope = rememberCoroutineScope()
 
         // First-launch editable seed data + splash removal after first frame.
         LaunchedEffect(Unit) {
@@ -107,37 +118,58 @@ fun App() {
         }
 
         CompositionLocalProvider(LocalSnackbar provides snackbar) {
-            Scaffold(
-                containerColor = SkyBlue,
-                snackbarHost = { SnackbarHost(snackbar) },
-                topBar = { TassicHeader() },
-                bottomBar = { TassicNavBar(current = tab, onSelect = { tab = it }) }
-            ) { innerPadding ->
-                AnimatedContent(
-                    targetState = tab,
-                    transitionSpec = {
-                        val forward = targetState.ordinal >= initialState.ordinal
-                        (
-                            slideInHorizontally(tween(280)) { full -> if (forward) full / 6 else -full / 6 } +
-                                fadeIn(tween(280))
-                            ) togetherWith (
-                            slideOutHorizontally(tween(240)) { full -> if (forward) -full / 6 else full / 6 } +
-                                fadeOut(tween(200))
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                // Default gesturesEnabled = true → edge-swipe from the left opens it,
+                // in addition to the hamburger icon in the header below.
+                drawerContent = {
+                    TassicDrawerContent(
+                        current = tab,
+                        onSelect = {
+                            tab = it
+                            scope.launch { drawerState.close() }
+                        }
+                    )
+                }
+            ) {
+                Box(Modifier.fillMaxSize()) {
+                    AmbientBackground(Modifier.fillMaxSize())
+                    Scaffold(
+                        containerColor = Color.Transparent,
+                        snackbarHost = { SnackbarHost(snackbar) },
+                        topBar = {
+                            TassicHeader(
+                                onMenuClick = { scope.launch { drawerState.open() } }
                             )
-                    },
-                    label = "tabSwitch"
-                ) { current ->
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    ) {
-                        when (current) {
-                            Tab.TODAY -> TodayTab()
-                            Tab.MUSIC -> MusicTab()
-                            Tab.LIFE -> LifeTab()
-                            Tab.FAITH -> FaithTab()
-                            Tab.JOURNAL -> JournalTab()
+                        }
+                    ) { innerPadding ->
+                        AnimatedContent(
+                            targetState = tab,
+                            transitionSpec = {
+                                val forward = targetState.ordinal >= initialState.ordinal
+                                (
+                                    slideInHorizontally(tween(280)) { full -> if (forward) full / 6 else -full / 6 } +
+                                        fadeIn(tween(280))
+                                    ) togetherWith (
+                                    slideOutHorizontally(tween(240)) { full -> if (forward) -full / 6 else full / 6 } +
+                                        fadeOut(tween(200))
+                                    )
+                            },
+                            label = "tabSwitch"
+                        ) { current ->
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(innerPadding)
+                            ) {
+                                when (current) {
+                                    Tab.TODAY -> TodayTab()
+                                    Tab.MUSIC -> MusicTab()
+                                    Tab.LIFE -> LifeTab()
+                                    Tab.FAITH -> FaithTab()
+                                    Tab.JOURNAL -> JournalTab()
+                                }
+                            }
                         }
                     }
                 }
@@ -149,16 +181,20 @@ fun App() {
 // ---------------------------------------------------------------- header
 
 @Composable
-private fun TassicHeader() {
-    Surface(color = SkyBlue) {
+private fun TassicHeader(onMenuClick: () -> Unit) {
+    Surface(color = Color.Transparent) {
         Row(
             Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
                 .windowInsetsPadding(WindowInsets.displayCutout)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+                .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onMenuClick) {
+                Icon(Icons.Filled.Menu, contentDescription = "Open menu", tint = Navy)
+            }
+            Spacer(Modifier.width(4.dp))
             TassicLogo(Modifier.size(42.dp))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
@@ -205,51 +241,56 @@ fun TassicLogo(modifier: Modifier = Modifier) {
     }
 }
 
-// ---------------------------------------------------------------- bottom navigation
+// ---------------------------------------------------------------- navigation drawer
 
 @Composable
-private fun TassicNavBar(current: Tab, onSelect: (Tab) -> Unit) {
-    Surface(color = Navy, shadowElevation = 14.dp) {
-        Row(
+private fun TassicDrawerContent(current: Tab, onSelect: (Tab) -> Unit) {
+    ModalDrawerSheet(
+        drawerContainerColor = Navy,
+        modifier = Modifier.windowInsetsPadding(WindowInsets.displayCutout)
+    ) {
+        Column(
             Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                .statusBarsPadding()
                 .navigationBarsPadding()
-                .windowInsetsPadding(WindowInsets.displayCutout)
-                .height(68.dp)
+                .padding(vertical = 12.dp)
         ) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TassicLogo(Modifier.size(36.dp))
+                Spacer(Modifier.width(10.dp))
+                Text("Tassic", style = MaterialTheme.typography.titleLarge, color = Color.White)
+            }
+            Spacer(Modifier.height(8.dp))
             Tab.entries.forEach { tab ->
                 val selected = tab == current
-                val iconTint = if (selected) Amber else Color.White.copy(alpha = 0.72f)
-                val labelTint = if (selected) Color.White else Color.White.copy(alpha = 0.55f)
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxSize()
-                        .clickable { onSelect(tab) }
-                ) {
-                    Box(
-                        Modifier
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(if (selected) Amber.copy(alpha = 0.16f) else Color.Transparent)
-                            .padding(horizontal = 16.dp, vertical = 4.dp)
-                    ) {
+                NavigationDrawerItem(
+                    icon = {
                         Icon(
                             tab.icon,
-                            contentDescription = tab.label,
-                            tint = iconTint,
-                            modifier = Modifier.size(22.dp)
+                            contentDescription = null,
+                            tint = if (selected) Amber else Color.White.copy(alpha = 0.72f)
                         )
-                    }
-                    Spacer(Modifier.height(3.dp))
-                    Text(
-                        tab.label,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = labelTint,
-                        maxLines = 1
-                    )
-                }
+                    },
+                    label = {
+                        Text(
+                            tab.label,
+                            color = if (selected) Color.White else Color.White.copy(alpha = 0.72f)
+                        )
+                    },
+                    selected = selected,
+                    onClick = { onSelect(tab) },
+                    colors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = Amber.copy(alpha = 0.16f),
+                        unselectedContainerColor = Color.Transparent
+                    ),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                )
             }
         }
     }

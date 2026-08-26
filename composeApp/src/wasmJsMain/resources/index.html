@@ -29,6 +29,8 @@
         <div class="spinner"></div>
     </div>
 
+    <div id="tassic-exit-toast" aria-hidden="true">Swipe back again to exit</div>
+
     <noscript>Tassic needs JavaScript / WebAssembly enabled to run.</noscript>
 
     <script src="skiko.js"></script>
@@ -39,6 +41,57 @@
                 navigator.serviceWorker.register('sw.js', { scope: './' });
             });
         }
+    </script>
+
+    <script>
+        // ---- Double-back-to-exit guard -------------------------------------
+        // Only installed apps (TWA / "Add to Home Screen") get a bare back
+        // gesture that closes the app on the very first swipe, because there's
+        // no browser history to fall back to. A normal browser tab already has
+        // real back/forward behaviour, so this only activates in standalone
+        // display mode to avoid interfering with that.
+        (function () {
+            var isStandalone =
+                window.matchMedia('(display-mode: standalone)').matches ||
+                window.navigator.standalone === true;
+            if (!isStandalone) return;
+
+            var toast = document.getElementById('tassic-exit-toast');
+            var armed = false;
+            var armTimer = null;
+
+            function pushGuard() {
+                history.pushState({ tassicGuard: true }, '', location.href);
+            }
+
+            function showToast() {
+                toast.classList.add('visible');
+                clearTimeout(showToast._t);
+                showToast._t = setTimeout(function () {
+                    toast.classList.remove('visible');
+                }, 1800);
+            }
+
+            // Seed one guard entry so the very first back press is
+            // interceptable instead of immediately exiting.
+            pushGuard();
+
+            window.addEventListener('popstate', function () {
+                if (!armed) {
+                    // First back press: re-arm the guard, show the hint,
+                    // and give the user ~2s to press back again to exit.
+                    pushGuard();
+                    showToast();
+                    armed = true;
+                    clearTimeout(armTimer);
+                    armTimer = setTimeout(function () { armed = false; }, 2000);
+                } else {
+                    // Second back press within the window: let it proceed.
+                    // No guard is re-pushed, so the next back genuinely exits.
+                    clearTimeout(armTimer);
+                }
+            });
+        })();
     </script>
 </body>
 </html>

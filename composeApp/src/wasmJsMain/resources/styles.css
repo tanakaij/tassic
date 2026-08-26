@@ -80,3 +80,28 @@ html, body {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.06); }
 }
+
+/* ---- "Swipe again to exit" toast (double-back-to-exit guard) ---- */
+#tassic-exit-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(28px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(12px);
+    background: #0F2B4C;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 12px 20px;
+    border-radius: 999px;
+    box-shadow: 0 8px 20px rgba(15, 43, 76, 0.35);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1000;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    white-space: nowrap;
+}
+
+#tassic-exit-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}

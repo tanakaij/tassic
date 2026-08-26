@@ -75,8 +75,8 @@ fun TabScaffold(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+                .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content
         )
         if (onFab != null && fabLabel != null && fabIcon != null) {
@@ -88,6 +88,7 @@ fun TabScaffold(
                 contentColor = Navy,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
                     .padding(20.dp)
             )
         }

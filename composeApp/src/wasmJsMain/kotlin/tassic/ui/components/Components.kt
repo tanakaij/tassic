@@ -109,7 +109,7 @@ fun TassicCard(
         colors = CardDefaults.cardColors(containerColor = CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(Modifier.padding(16.dp), content = content)
+        Column(Modifier.padding(14.dp), content = content)
     }
 }
 
@@ -486,11 +486,11 @@ fun EmptyState(
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .background(SkySoft.copy(alpha = 0.55f))
-            .padding(vertical = 26.dp, horizontal = 20.dp),
+            .padding(vertical = 18.dp, horizontal = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(icon, contentDescription = null, tint = Blue, modifier = Modifier.size(34.dp))
-        Spacer(Modifier.height(10.dp))
+        Icon(icon, contentDescription = null, tint = Blue, modifier = Modifier.size(28.dp))
+        Spacer(Modifier.height(8.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, color = Navy)
         Spacer(Modifier.height(4.dp))
         Text(hint, style = MaterialTheme.typography.bodySmall, color = Muted)
