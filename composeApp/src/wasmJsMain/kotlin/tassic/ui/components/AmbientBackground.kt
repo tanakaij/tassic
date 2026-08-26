@@ -6,74 +6,114 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import tassic.ui.theme.Amber
 import tassic.ui.theme.Coral
+import tassic.ui.theme.Navy
 import tassic.ui.theme.NavySoft
 import tassic.ui.theme.SkyBlue
 import tassic.ui.theme.SkyDeep
 import tassic.ui.theme.SkySoft
 
 /**
- * Soft, slowly-drifting blurred colour blobs behind the app content — an
- * "ambient gradient" wallpaper feel similar to Apple Music / iOS lock-screen
- * backgrounds, built entirely from the existing brand palette so it stays
+ * Soft, continuously-flowing colour wash behind the app content — a smooth
+ * "ambient gradient" wallpaper feel similar to Apple Music's now-playing
+ * background, built entirely from the existing brand palette so it stays
  * on-brand rather than looking like a generic stock gradient.
+ *
+ * Unlike a set of hard-edged blurred circles, every colour patch here is a
+ * radial gradient that fades all the way to transparent, is drawn far
+ * larger than its "core", and drifts along a slow, eased, circular path —
+ * so patches melt into one another and into the base colour with no visible
+ * seams, and the motion itself reads as smooth rather than a back-and-forth
+ * bounce.
  *
  * Sits behind a transparent Scaffold + header; individual cards remain
  * solid white on top, so readability is unaffected.
  */
 @Composable
 fun AmbientBackground(modifier: Modifier = Modifier) {
+    // Matches the device's light/dark setting, same as TassicTheme, so the
+    // wallpaper doesn't stay a bright sky wash on a phone in dark mode.
+    val dark = isSystemInDarkTheme()
+    val baseA = if (dark) Navy else SkySoft
+    val baseB = if (dark) NavySoft else SkyBlue
+    val baseC = if (dark) Color(0xFF0A1B30) else SkyDeep
+    val canvasBase = if (dark) Navy else SkyBlue
+    val warmBlob = if (dark) NavySoft else SkySoft
+
     val transition = rememberInfiniteTransition(label = "ambient")
-    val drift by transition.animateFloat(
+
+    // A single, slowly-advancing, linear "clock" driving every blob's
+    // position via sin/cos. Because each blob reads a different phase and
+    // period of the same clock (instead of its own reversing tween), the
+    // whole scene flows continuously in one direction with no jarring
+    // direction-change moment — the hallmark of the Apple Music look.
+    val clock by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(26_000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
+            animation = tween(60_000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
         ),
-        label = "ambientDrift"
+        label = "ambientClock"
     )
 
-    Box(modifier.fillMaxSize().background(SkyBlue)) {
-        Blob(SkySoft.copy(alpha = 0.95f), 380.dp, Alignment.Center, drift, dx = 18, dy = -16)
-        Blob(Amber.copy(alpha = 0.50f), 260.dp, Alignment.TopStart, drift, dx = 34, dy = -18)
-        Blob(Coral.copy(alpha = 0.32f), 300.dp, Alignment.TopEnd, drift, dx = -28, dy = 22)
-        Blob(SkyDeep.copy(alpha = 0.65f), 340.dp, Alignment.BottomStart, drift, dx = 18, dy = 26)
-        Blob(NavySoft.copy(alpha = 0.22f), 260.dp, Alignment.BottomEnd, drift, dx = -20, dy = -24)
+    Canvas(
+        modifier
+            .fillMaxSize()
+            .background(canvasBase)
+    ) {
+        val w = size.width
+        val h = size.height
+        val diag = kotlin.math.hypot(w, h)
+
+        // Base diagonal wash so even the "empty" canvas has a gentle tonal
+        // shift instead of a flat fill — this is what keeps the whole thing
+        // reading as one continuous gradient rather than blobs-on-a-colour.
+        drawRect(
+            brush = Brush.linearGradient(
+                colors = listOf(baseA, baseB, baseC),
+                start = Offset(0f, 0f),
+                end = Offset(w, h)
+            )
+        )
+
+        fun orbit(cx: Float, cy: Float, radius: Float, phase: Float, speed: Float): Offset {
+            val t = (clock * speed + phase) * 2f * PI.toFloat()
+            return Offset(cx + cos(t) * radius, cy + sin(t) * radius)
+        }
+
+        softBlob(orbit(w * 0.30f, h * 0.28f, w * 0.16f, 0.00f, 1.0f), diag * 0.55f, warmBlob, 0.95f)
+        softBlob(orbit(w * 0.82f, h * 0.18f, w * 0.14f, 0.33f, 0.8f), diag * 0.42f, Amber, if (dark) 0.22f else 0.40f)
+        softBlob(orbit(w * 0.88f, h * 0.75f, w * 0.18f, 0.60f, 1.2f), diag * 0.48f, Coral, if (dark) 0.16f else 0.28f)
+        softBlob(orbit(w * 0.16f, h * 0.82f, w * 0.15f, 0.15f, 0.9f), diag * 0.50f, baseC, 0.55f)
+        softBlob(orbit(w * 0.55f, h * 0.55f, w * 0.10f, 0.80f, 0.6f), diag * 0.38f, NavySoft, if (dark) 0.35f else 0.16f)
     }
 }
 
-@Composable
-private fun BoxScope.Blob(
-    color: Color,
-    diameter: Dp,
-    align: Alignment,
-    driftT: Float,
-    dx: Int,
-    dy: Int
-) {
-    Box(
-        Modifier
-            .align(align)
-            .offset(x = (dx * driftT).dp, y = (dy * driftT).dp)
-            .size(diameter)
-            .blur(90.dp)
-            .background(color, CircleShape)
+/** Draws one colour patch as a radial gradient fading fully to transparent — no hard edge to blur away. */
+private fun DrawScope.softBlob(center: Offset, radius: Float, color: Color, alpha: Float) {
+    drawRect(
+        brush = Brush.radialGradient(
+            colors = listOf(color.copy(alpha = alpha), color.copy(alpha = 0f)),
+            center = center,
+            radius = radius,
+            tileMode = TileMode.Clamp
+        )
     )
 }

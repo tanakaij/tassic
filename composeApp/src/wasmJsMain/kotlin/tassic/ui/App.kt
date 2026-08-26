@@ -31,7 +31,7 @@ import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Church
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Piano
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
@@ -90,7 +90,7 @@ import tassic.ui.theme.TassicTheme
 
 enum class Tab(val label: String, val icon: ImageVector) {
     TODAY("Today", Icons.Filled.Today),
-    MUSIC("Music", Icons.Filled.Piano),
+    MUSIC("Music", Icons.Filled.MusicNote),
     LIFE("Life & Goals", Icons.Filled.Flag),
     FAITH("Faith", Icons.Filled.Church),
     JOURNAL("Journal", Icons.Filled.AutoStories)

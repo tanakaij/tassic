@@ -1,0 +1,133 @@
+{
+    "type": "AdaptiveCard",
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "version": "1.5",
+    "body": [
+        {
+            "type": "ColumnSet",
+            "columns": [
+                {
+                    "type": "Column",
+                    "width": "auto",
+                    "items": [
+                        {
+                            "type": "Image",
+                            "url": "https://tassic.app/icons/icon-192.png",
+                            "size": "Small",
+                            "width": "28px",
+                            "height": "28px"
+                        }
+                    ]
+                },
+                {
+                    "type": "Column",
+                    "width": "stretch",
+                    "verticalContentAlignment": "Center",
+                    "items": [
+                        {
+                            "type": "TextBlock",
+                            "text": "Tassic — Today",
+                            "weight": "Bolder",
+                            "size": "Medium",
+                            "color": "Default",
+                            "wrap": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "TextBlock",
+            "text": "${dayLabel}",
+            "isSubtle": true,
+            "spacing": "Small",
+            "wrap": true
+        },
+        {
+            "type": "ColumnSet",
+            "spacing": "Medium",
+            "columns": [
+                {
+                    "type": "Column",
+                    "width": "stretch",
+                    "items": [
+                        {
+                            "type": "TextBlock",
+                            "text": "${modulesDone}",
+                            "weight": "Bolder",
+                            "size": "ExtraLarge",
+                            "color": "Accent",
+                            "horizontalAlignment": "Center"
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "modules done",
+                            "isSubtle": true,
+                            "size": "Small",
+                            "horizontalAlignment": "Center",
+                            "wrap": true
+                        }
+                    ]
+                },
+                {
+                    "type": "Column",
+                    "width": "stretch",
+                    "items": [
+                        {
+                            "type": "TextBlock",
+                            "text": "${openTodos}",
+                            "weight": "Bolder",
+                            "size": "ExtraLarge",
+                            "color": "Good",
+                            "horizontalAlignment": "Center"
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "tasks open",
+                            "isSubtle": true,
+                            "size": "Small",
+                            "horizontalAlignment": "Center",
+                            "wrap": true
+                        }
+                    ]
+                },
+                {
+                    "type": "Column",
+                    "width": "stretch",
+                    "items": [
+                        {
+                            "type": "TextBlock",
+                            "text": "${streakDays}",
+                            "weight": "Bolder",
+                            "size": "ExtraLarge",
+                            "color": "Warning",
+                            "horizontalAlignment": "Center"
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "day streak",
+                            "isSubtle": true,
+                            "size": "Small",
+                            "horizontalAlignment": "Center",
+                            "wrap": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "TextBlock",
+            "text": "${focusTitle}",
+            "weight": "Bolder",
+            "spacing": "Medium",
+            "wrap": true
+        }
+    ],
+    "actions": [
+        {
+            "type": "Action.OpenUrl",
+            "title": "Open Tassic",
+            "url": "https://tassic.app/?tab=today"
+        }
+    ]
+}

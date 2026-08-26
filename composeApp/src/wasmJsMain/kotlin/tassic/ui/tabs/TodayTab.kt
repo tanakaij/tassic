@@ -12,7 +12,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Piano
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.Icon
@@ -139,7 +139,7 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
                 title = "Keyboard",
                 subtitle = "Mode rotation · 12-key cycle · modules",
                 trailing = {
-                    Icon(Icons.Filled.Piano, contentDescription = null, tint = Blue)
+                    Icon(Icons.Filled.MusicNote, contentDescription = null, tint = Blue)
                 }
             )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

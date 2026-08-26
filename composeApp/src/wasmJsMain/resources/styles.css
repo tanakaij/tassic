@@ -9,6 +9,16 @@ html, body {
     -webkit-tap-highlight-color: transparent;
 }
 
+/* Matches the device/browser colour scheme so the page shell (visible for
+   a frame before Compose paints) doesn't flash a bright background on a
+   phone set to dark mode — the Compose UI itself follows the same signal
+   via isSystemInDarkTheme(). */
+@media (prefers-color-scheme: dark) {
+    html, body {
+        background: #0F2B4C;
+    }
+}
+
 /* Compose viewport host — kept inside the Android safe areas (notch,
    display cutout, gesture navigation bar) via env() insets. */
 #webApp {
@@ -38,6 +48,22 @@ html, body {
     background: linear-gradient(180deg, #BBD8EC 0%, #A9CDE8 100%);
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (prefers-color-scheme: dark) {
+    #splash {
+        background: linear-gradient(180deg, #0F2B4C 0%, #0A1B30 100%);
+    }
+    #splash .wordmark {
+        color: #D8EAF6;
+    }
+    #splash .tagline {
+        color: #9FBFDA;
+    }
+    #splash .spinner {
+        border-color: rgba(216, 234, 246, 0.18);
+        border-top-color: #F7C948;
+    }
 }
 
 #splash img {

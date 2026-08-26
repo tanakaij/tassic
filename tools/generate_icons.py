@@ -26,11 +26,12 @@ from pathlib import Path
 from PIL import Image
 import numpy as np
 
-# Matches tassic.ui.theme.Navy / twa-manifest.json themeColor (#0F2B4C).
+# Matches tassic.ui.theme.SkyBlue / manifest.json background_color (#BBD8EC).
 # Used as the maskable icon's edge-to-edge background so the launcher
 # icon looks intentional under circular/squircle/rounded-square masks,
-# instead of showing a white box.
-NAVY = (15, 43, 76, 255)
+# instead of showing a white box. Sky blue (not navy) keeps the logo's
+# own dark-navy shading visible instead of blending into the backing.
+SKY_BLUE = (187, 216, 236, 255)
 
 OUT = Path("composeApp/src/wasmJsMain/resources")
 
@@ -82,7 +83,7 @@ def main() -> None:
 
     # Maskable: solid brand-colour background, logo inset to the ~64-66%
     # safe zone so nothing gets clipped by circular/rounded-square masks.
-    canvas = Image.new("RGBA", (512, 512), NAVY)
+    canvas = Image.new("RGBA", (512, 512), SKY_BLUE)
     safe_logo = squared.resize((330, 330), Image.LANCZOS)
     pos = ((512 - 330) // 2, (512 - 330) // 2)
     canvas.paste(safe_logo, pos, safe_logo)

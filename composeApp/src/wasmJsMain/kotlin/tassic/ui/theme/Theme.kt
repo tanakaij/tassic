@@ -1,5 +1,6 @@
 package tassic.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
@@ -78,12 +79,26 @@ private val LightColors: ColorScheme = lightColorScheme(
 private val DarkColors: ColorScheme = darkColorScheme(
     primary = BlueBright,
     onPrimary = Color.White,
+    primaryContainer = NavySoft,
+    onPrimaryContainer = SkySoft,
     secondary = Amber,
+    onSecondary = Navy,
+    secondaryContainer = Color(0xFF4A3B12),
+    onSecondaryContainer = Color(0xFFFBE9B8),
+    tertiary = Green,
+    onTertiary = Color.White,
     background = Navy,
     onBackground = SkySoft,
     surface = NavySoft,
     onSurface = SkySoft,
-    error = Coral
+    surfaceVariant = Color(0xFF27496E),
+    onSurfaceVariant = Color(0xFFAFC7DE),
+    error = Coral,
+    onError = Color.White,
+    errorContainer = Color(0xFF5C2029),
+    onErrorContainer = Color(0xFFFDE0E3),
+    outline = Color(0xFF5B7A99),
+    outlineVariant = Color(0xFF2E4F72)
 )
 
 /** Serif display type mirroring the template's elegant headings. */
@@ -107,11 +122,16 @@ private fun tassicTypography(): Typography {
     )
 }
 
+/**
+ * Follows the device's system light/dark setting (`prefers-color-scheme` in
+ * the browser / OS theme in the installed PWA shell), the same way an
+ * OS-level widget picks up the surrounding theme automatically.
+ */
 @Composable
 fun TassicTheme(content: @Composable () -> Unit) {
-    // The PWA is a light, airy product by design; dark scheme kept for future use.
+    val colors = if (isSystemInDarkTheme()) DarkColors else LightColors
     MaterialTheme(
-        colorScheme = LightColors,
+        colorScheme = colors,
         typography = tassicTypography(),
         content = content
     )
