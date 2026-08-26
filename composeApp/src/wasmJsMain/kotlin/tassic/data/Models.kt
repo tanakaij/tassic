@@ -23,6 +23,12 @@ data class TodoItem(
     var notes: String = "",
     var priority: Priority = Priority.NORMAL,
     var dueEpochDay: Long? = null,
+    /** Minutes since local midnight on [dueEpochDay]. Null = date only, no specific time. */
+    var dueTimeMinutes: Int? = null,
+    /** Minutes before the due date/time to notify; null = no reminder, 0 = right at the time. */
+    var reminderMinutesBefore: Int? = null,
+    /** Internal bookkeeping so the reminder scheduler notifies at most once. */
+    var reminderFired: Boolean = false,
     var tags: List<String> = emptyList(),
     var done: Boolean = false,
     var createdAt: Long = 0

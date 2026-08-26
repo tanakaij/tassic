@@ -70,16 +70,21 @@ fun TabScaffold(
     onFab: (() -> Unit)?,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val hasFab = onFab != null && fabLabel != null && fabIcon != null
     Box(Modifier.fillMaxSize()) {
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
+                // Extra bottom padding reserves room for the floating FAB
+                // (its own height + bottom inset + breathing room) so the
+                // last card in the list scrolls clear of it instead of
+                // sitting underneath/behind it.
+                .padding(start = 16.dp, end = 16.dp, bottom = if (hasFab) 96.dp else 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content
         )
-        if (onFab != null && fabLabel != null && fabIcon != null) {
+        if (hasFab) {
             ExtendedFloatingActionButton(
                 onClick = onFab,
                 icon = { Icon(fabIcon, contentDescription = null) },
@@ -173,7 +178,19 @@ fun FieldLabel(text: String) {
 
 // ---------------------------------------------------------------- todo
 
-private enum class DueChoice(val label: String) { NONE("No date"), TODAY("Today"), TOMORROW("Tomorrow"), WEEK("Next week") }
+private enum class DueChoice(val label: String) {
+    NONE("No date"), TODAY("Today"), TOMORROW("Tomorrow"), WEEK("Next week"), CUSTOM("Custom date")
+}
+
+private enum class ReminderLead(val minutesBefore: Int?, val label: String) {
+    NONE(null, "No reminder"),
+    AT_TIME(0, "At due time"),
+    MIN_10(10, "10 min before"),
+    MIN_30(30, "30 min before"),
+    HOUR_1(60, "1 hour before"),
+    HOUR_3(180, "3 hours before"),
+    DAY_1(1440, "1 day before")
+}
 
 @Composable
 fun TodoSheet(edit: TodoItem?, onDismiss: () -> Unit) {
@@ -182,14 +199,38 @@ fun TodoSheet(edit: TodoItem?, onDismiss: () -> Unit) {
     var title by rememberState(ed?.title ?: "")
     var notes by rememberState(ed?.notes ?: "")
     var priority by rememberState(ed?.priority ?: Priority.NORMAL)
+
+    val today = T.today()
     var due by rememberState(
         when (ed?.dueEpochDay) {
             null -> DueChoice.NONE
-            T.today() -> DueChoice.TODAY
-            T.today() + 1 -> DueChoice.TOMORROW
-            else -> DueChoice.WEEK
+            today -> DueChoice.TODAY
+            today + 1 -> DueChoice.TOMORROW
+            today + 7 -> DueChoice.WEEK
+            else -> DueChoice.CUSTOM
         }
     )
+
+    // Custom date picker state — seeded from the existing due date if there
+    // is one, otherwise defaults to tomorrow so it opens on a sensible day.
+    val seedDay = ed?.dueEpochDay ?: (today + 1)
+    val (seedY, seedM, seedD) = T.civilFromDays(seedDay)
+    val currentYear = T.civilFromDays(today).first.toInt()
+    var customDay by rememberState(seedD.toInt())
+    var customMonth by rememberState(seedM.toInt())
+    var customYear by rememberState(seedY.toInt())
+
+    // Optional time-of-day, independent of which due-date mode is picked
+    // (Today / Tomorrow / Next week / Custom can all carry a specific time).
+    var hasTime by rememberState(ed?.dueTimeMinutes != null)
+    val seedMinutes = ed?.dueTimeMinutes ?: (9 * 60) // default 9:00 AM
+    var hour by rememberState(seedMinutes / 60)
+    var minute by rememberState((seedMinutes % 60 / 5) * 5)
+
+    var reminder by rememberState(
+        ReminderLead.entries.firstOrNull { it.minutesBefore == ed?.reminderMinutesBefore } ?: ReminderLead.NONE
+    )
+
     var tags by rememberState(ed?.tags?.joinToString(", ") ?: "")
 
     TassicSheet(title = if (edit == null) "New Task" else "Edit Task", onDismiss = onDismiss) {
@@ -197,24 +238,71 @@ fun TodoSheet(edit: TodoItem?, onDismiss: () -> Unit) {
         FieldLabel("Notes")
         LabeledField(notes, { notes = it }, "Notes", singleLine = false, minLines = 2)
         FieldLabel("Priority")
-        SelectChips(Priority.entries.toList(), priority) { priority = it }
+        SelectChips(Priority.entries.toList(), priority, label = { it.name.lowercase().replaceFirstChar(Char::uppercase) }) { priority = it }
         FieldLabel("Due")
-        SelectChips(DueChoice.entries.toList(), due) { due = it }
+        SelectChips(DueChoice.entries.toList(), due, label = { it.label }) { due = it }
+
+        if (due == DueChoice.CUSTOM) {
+            Row(
+                Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                MiniStepper("Day", customDay, { customDay = it }, range = 1..31)
+                MiniStepper("Month", customMonth, { customMonth = it }, range = 1..12)
+                MiniStepper("Year", customYear, { customYear = it }, range = currentYear..(currentYear + 5), format = { it.toString() })
+            }
+        }
+
+        if (due != DueChoice.NONE) {
+            if (hasTime) {
+                FieldLabel("Time")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        MiniStepper("Hour", hour, { hour = it }, range = 0..23)
+                        MiniStepper("Minute", minute, { minute = it }, range = 0..55, step = 5)
+                    }
+                    GhostButton("Remove time", { hasTime = false })
+                }
+            } else {
+                GhostButton("+ Add a specific time", { hasTime = true })
+            }
+            FieldLabel("Reminder")
+            SelectChips(ReminderLead.entries.toList(), reminder, label = { it.label }) { reminder = it }
+            if (reminder != ReminderLead.NONE && tassic.platform.Notifications.permission() != "granted") {
+                Text(
+                    "Notifications aren't enabled yet — turn them on from the Faith tab so this reminder can actually alert you.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Coral,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+
         LabeledField(tags, { tags = it }, "Tags", placeholder = "comma, separated")
         SheetActions(
             onSave = {
                 val dueDay = when (due) {
-                    DueChoice.TODAY -> T.today()
-                    DueChoice.TOMORROW -> T.today() + 1
-                    DueChoice.WEEK -> T.today() + 7
+                    DueChoice.TODAY -> today
+                    DueChoice.TOMORROW -> today + 1
+                    DueChoice.WEEK -> today + 7
+                    DueChoice.CUSTOM -> T.daysFromCivil(customYear.toLong(), customMonth.toLong(), customDay.toLong())
                     DueChoice.NONE -> null
                 }
+                val dueMinutes = if (dueDay != null && hasTime) hour * 60 + minute else null
                 val base = edit ?: TodoItem(createdAt = T.now())
                 val item = base.copy(
                     title = title.trim(),
                     notes = notes.trim(),
                     priority = priority,
                     dueEpochDay = dueDay,
+                    dueTimeMinutes = dueMinutes,
+                    reminderMinutesBefore = if (dueDay != null) reminder.minutesBefore else null,
+                    // A changed due date/time re-arms the reminder even if a
+                    // previous one already fired for the old date.
+                    reminderFired = if (edit != null && dueDay == ed?.dueEpochDay && dueMinutes == ed.dueTimeMinutes) ed.reminderFired else false,
                     tags = tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                 )
                 if (edit == null) store.addTodo(item) else store.updateTodo(item)

@@ -243,7 +243,11 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
                 CheckRow(
                     title = t.title,
                     subtitle = buildString {
-                        t.dueEpochDay?.let { append("Due ${T.relativeDays(it, today)}") }
+                        t.dueEpochDay?.let { day ->
+                            append("Due ${T.relativeDays(day, today)}")
+                            t.dueTimeMinutes?.let { mins -> append(" · ${T.timeLabel(mins * 60_000L)}") }
+                            if (t.reminderMinutesBefore != null) append(" · 🔔")
+                        }
                         if (t.tags.isNotEmpty()) {
                             if (isNotEmpty()) append(" · ")
                             append(t.tags.joinToString(", "))

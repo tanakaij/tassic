@@ -362,6 +362,58 @@ fun Stepper(
     }
 }
 
+/**
+ * Compact up/down numeric column used to build custom date & time pickers
+ * (day / month / year, hour / minute) without needing a native platform
+ * picker widget. Wraps around at the range edges (e.g. 23 → 00 for hours).
+ */
+@Composable
+fun MiniStepper(
+    label: String,
+    value: Int,
+    onValue: (Int) -> Unit,
+    range: IntRange,
+    modifier: Modifier = Modifier,
+    step: Int = 1,
+    format: (Int) -> String = { it.toString().padStart(2, '0') }
+) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Muted)
+        Column(
+            Modifier
+                .padding(top = 2.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(SkySoft.copy(alpha = 0.6f)),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            IconButton(
+                onClick = {
+                    val next = value + step
+                    onValue(if (next > range.last) range.first else next)
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Increase $label", tint = Navy, modifier = Modifier.size(18.dp))
+            }
+            Text(
+                format(value),
+                style = MaterialTheme.typography.titleMedium,
+                color = Navy,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+            IconButton(
+                onClick = {
+                    val next = value - step
+                    onValue(if (next < range.first) range.last else next)
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Decrease $label", tint = Navy, modifier = Modifier.size(18.dp))
+            }
+        }
+    }
+}
+
 @Composable
 fun LabeledField(
     value: String,

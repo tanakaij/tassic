@@ -57,6 +57,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -115,6 +116,16 @@ fun App() {
         LaunchedEffect(Unit) {
             store.seedIfEmpty()
             hideSplash()
+        }
+
+        // Polls To-Do reminders every minute regardless of which tab is open
+        // (mirrors the Faith-tab routine-reminder loop). Only fires while
+        // this app/tab is open — see Reminders.kt for why.
+        LaunchedEffect(Unit) {
+            while (true) {
+                tassic.data.Reminders.checkTodoReminders(store)
+                delay(60_000)
+            }
         }
 
         CompositionLocalProvider(LocalSnackbar provides snackbar) {
