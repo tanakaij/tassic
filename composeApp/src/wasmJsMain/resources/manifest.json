@@ -36,7 +36,6 @@
             "short_name": "Today",
             "description": "Today's practice, open tasks and streaks at a glance, themed to match your device.",
             "tag": "today",
-            "template": "today-widget-template",
             "ms_ac_template": "widgets/today-widget-template.json",
             "data": "widgets/today-widget-data.json",
             "type": "application/json",

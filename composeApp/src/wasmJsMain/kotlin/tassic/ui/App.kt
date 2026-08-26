@@ -79,6 +79,7 @@ import tassic.platform.awaitOrNull
 import tassic.platform.fetchAsDataUrl
 import tassic.platform.hideSplash
 import tassic.platform.queryParam
+import tassic.platform.Widgets
 import tassic.ui.components.LocalSnackbar
 import tassic.ui.components.AmbientBackground
 import tassic.ui.components.Pill
@@ -135,6 +136,19 @@ fun App() {
             }
         }
 
+        // Feeds the "Tassic Today" home-screen widget. The manifest declares the
+        // widget against a *static* widgets/today-widget-data.json, so on its own
+        // it could only ever render the placeholder copy. Pushing real numbers to
+        // sw.js (which owns the Widgets API surface) is what actually makes it
+        // update. Runs on a slow loop so a widget installed mid-session still
+        // picks up today's figures without the user reopening the app.
+        LaunchedEffect(Unit) {
+            while (true) {
+                Widgets.push(store.widgetDataJson())
+                delay(120_000)
+            }
+        }
+
         CompositionLocalProvider(LocalSnackbar provides snackbar) {
             ModalNavigationDrawer(
                 drawerState = drawerState,
@@ -181,7 +195,13 @@ fun App() {
                                     .padding(innerPadding)
                             ) {
                                 when (current) {
-                                    Tab.TODAY -> TodayTab()
+                                    // Previously `TodayTab()` — the composable declares
+                                    // `onOpenTab: (Tab) -> Unit = {}`, so leaving it out
+                                    // silently bound both the "Music Studio" button and the
+                                    // "Open Studio" empty-state action on Focus of the Day
+                                    // to a no-op lambda. Wiring it to the tab state makes
+                                    // those buttons actually navigate.
+                                    Tab.TODAY -> TodayTab(onOpenTab = { tab = it })
                                     Tab.MUSIC -> MusicTab()
                                     Tab.LIFE -> LifeTab()
                                     Tab.FAITH -> FaithTab()

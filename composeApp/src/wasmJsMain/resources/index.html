@@ -37,11 +37,91 @@
     <script src="skiko.js"></script>
     <script src="composeApp.js"></script>
     <script>
-        if ('serviceWorker' in navigator) {
+        // ---- Service worker + offline precache -----------------------------
+        // Registering alone was not enough to make the app launch offline. A
+        // service worker only starts intercepting fetches once it activates and
+        // claims clients, which happens well after the page has already fired
+        // its own uncontrolled requests for composeApp.js / composeApp.wasm /
+        // skiko.* and the content-hashed chunks around them. On a device that
+        // installed the app once and was never fully reloaded online again,
+        // those binaries never entered the cache at all, so the first genuinely
+        // offline open sat on the splash spinner forever.
+        //
+        // Hardcoding filenames in sw.js can't fix that either, because webpack
+        // content-hashes them. So the page reports what it *actually* loaded,
+        // read straight out of Resource Timing, and the worker caches that list.
+        (function () {
+            if (!('serviceWorker' in navigator)) return;
+
+            // The Resource Timing buffer defaults to 250 entries and silently
+            // drops the rest - Compose resources alone can exceed that.
+            try { performance.setResourceTimingBufferSize(1000); } catch (e) {}
+
+            var registration = null;
+
+            function reportLoadedAssets() {
+                try {
+                    var urls = performance.getEntriesByType('resource')
+                        .map(function (entry) { return entry.name; });
+                    urls.push(location.href.split('#')[0]);
+
+                    var target = navigator.serviceWorker.controller ||
+                        (registration && (registration.active || registration.waiting));
+                    if (target) {
+                        target.postMessage({ type: 'CACHE_URLS', urls: urls });
+                    }
+                } catch (e) {}
+            }
+
+            navigator.serviceWorker.register('sw.js', { scope: './' })
+                .then(function (reg) {
+                    registration = reg;
+                    return navigator.serviceWorker.ready;
+                })
+                .then(function () {
+                    // Immediately, then again as late-loading chunks (fonts,
+                    // Compose resources, lazily fetched assets) come in.
+                    reportLoadedAssets();
+                    setTimeout(reportLoadedAssets, 5000);
+                    setTimeout(reportLoadedAssets, 20000);
+                })
+                .catch(function () {});
+
             window.addEventListener('load', function () {
-                navigator.serviceWorker.register('sw.js', { scope: './' });
+                setTimeout(reportLoadedAssets, 1500);
             });
-        }
+
+            // Opportunistic widget refresh in the background where supported.
+            navigator.serviceWorker.ready.then(function (reg) {
+                if (reg.periodicSync) {
+                    reg.periodicSync.register('tassic-widget-refresh', {
+                        minInterval: 60 * 60 * 1000
+                    }).catch(function () {});
+                }
+            }).catch(function () {});
+        })();
+    </script>
+
+    <script>
+        // ---- Splash safety net ---------------------------------------------
+        // hideSplash() only runs once Compose paints. If the Wasm bundle can't
+        // load (missing from cache on a cold offline start, corrupt download),
+        // the user just stared at a spinner with no way out and no explanation.
+        (function () {
+            setTimeout(function () {
+                var splash = document.getElementById('splash');
+                if (!splash) return;
+                var note = document.createElement('div');
+                note.className = 'tagline';
+                note.style.marginTop = '18px';
+                note.style.maxWidth = '18rem';
+                note.textContent = 'Still loading. Tap to retry - if you are offline, ' +
+                    'open Tassic once with a connection to finish caching it.';
+                note.style.cursor = 'pointer';
+                note.onclick = function () { location.reload(); };
+                splash.appendChild(note);
+            }, 20000);
+        })();
     </script>
 
     <script>

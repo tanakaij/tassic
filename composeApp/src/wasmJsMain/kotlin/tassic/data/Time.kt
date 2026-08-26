@@ -1,6 +1,7 @@
 package tassic.data
 
 import tassic.platform.jsNow
+import tassic.platform.jsTimezoneOffsetMinutes
 
 /** Pure-Kotlin civil calendar math (no external datetime dependency needed). */
 object T {
@@ -14,9 +15,20 @@ object T {
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     )
 
+    /** UTC epoch milliseconds — the canonical storage format for every timestamp. */
     fun now(): Long = jsNow().toLong()
 
-    fun today(): Long = now() / DAY_MS
+    /** Milliseconds to add to a UTC instant to get local wall-clock time. */
+    fun tzOffsetMs(): Long = -(jsTimezoneOffsetMinutes().toLong() * 60_000L)
+
+    /** "Now" expressed as local wall-clock milliseconds (for day/hour maths only). */
+    fun localNow(): Long = now() + tzOffsetMs()
+
+    /** Local calendar day for a stored UTC timestamp. */
+    fun dayOf(epochMs: Long): Long = (epochMs + tzOffsetMs()) / DAY_MS
+
+    /** Today's local calendar day — NOT the UTC one. */
+    fun today(): Long = localNow() / DAY_MS
 
     /** 0 = Monday … 6 = Sunday */
     fun dowIndex(epochDay: Long): Int {
@@ -56,9 +68,11 @@ object T {
         return "$d ${MONTHS[(m - 1).toInt()]}"
     }
 
+    /** Renders a stored UTC timestamp in the device's local timezone. */
     fun fullLabel(ms: Long): String {
-        val day = ms / DAY_MS
-        val minutes = (ms % DAY_MS) / 60_000
+        val local = ms + tzOffsetMs()
+        val day = local / DAY_MS
+        val minutes = (local % DAY_MS) / 60_000
         val hh = (minutes / 60).toString().padStart(2, '0')
         val mm = (minutes % 60).toString().padStart(2, '0')
         return "${dateLabel(day)} · $hh:$mm"

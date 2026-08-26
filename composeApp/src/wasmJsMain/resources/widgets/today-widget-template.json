@@ -12,7 +12,7 @@
                     "items": [
                         {
                             "type": "Image",
-                            "url": "https://tassic.app/icons/icon-192.png",
+                            "url": "icons/icon-192.png",
                             "size": "Small",
                             "width": "28px",
                             "height": "28px"
@@ -127,7 +127,7 @@
         {
             "type": "Action.OpenUrl",
             "title": "Open Tassic",
-            "url": "https://tassic.app/?tab=today"
+            "url": "./?tab=today"
         }
     ]
 }

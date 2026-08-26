@@ -235,7 +235,9 @@ class Store() {
 
     /** Consecutive-day workout streak (today or yesterday counts as alive). */
     fun workoutStreak(): Int {
-        val days = workoutLogs.flow.value.map { it.loggedAt / T.DAY_MS }.distinct().sortedDescending()
+        // T.dayOf() (local calendar day) rather than a raw UTC division, so the
+        // streak lines up with the same "today" the rest of the UI shows.
+        val days = workoutLogs.flow.value.map { T.dayOf(it.loggedAt) }.distinct().sortedDescending()
         if (days.isEmpty()) return 0
         var expected = T.today()
         if (days.first() == expected - 1) expected -= 1
@@ -328,6 +330,44 @@ class Store() {
 
     fun metaGet(key: String): String? = lsGet("tassic.meta.$key")
     fun metaSet(key: String, value: String) = lsSet("tassic.meta.$key", value)
+
+    // ---- Home-screen widget ------------------------------------------------------------------
+
+    private fun jsonEscape(raw: String): String = buildString {
+        raw.forEach { c ->
+            when (c) {
+                '"' -> append("\\\"")
+                '\\' -> append("\\\\")
+                '\n', '\r', '\t' -> append(' ')
+                else -> if (c.code >= 0x20) append(c)
+            }
+        }
+    }
+
+    /**
+     * Live payload for the "Tassic Today" widget, matching the bindings in
+     * `resources/widgets/today-widget-template.json`. The bundled
+     * `today-widget-data.json` is only a static placeholder, so without this the
+     * widget could never show anything but "Open Tassic to sync today's numbers".
+     * sw.js swaps in this JSON whenever the app pushes it.
+     */
+    fun widgetDataJson(): String {
+        val today = T.today()
+        val shape = cagedShapeForToday()
+        val modulesDone = practice.flow.value.count {
+            it.kind == PracticeKind.MODULE && it.doneEpochDay == today
+        }
+        val openCount = todos.flow.value.count { !it.done }
+        val dayLabel = jsonEscape(T.dayName(today) + " \u00b7 " + T.dateLabel(today))
+        val focus = jsonEscape(shape?.title ?: "No shape scheduled today")
+        return "{" +
+            "\"dayLabel\":\"" + dayLabel + "\"," +
+            "\"modulesDone\":\"" + modulesDone + "\"," +
+            "\"openTodos\":\"" + openCount + "\"," +
+            "\"streakDays\":\"" + workoutStreak() + "\"," +
+            "\"focusTitle\":\"" + focus + "\"" +
+            "}"
+    }
 
     /** Loads the editable presets once on first launch. */
     fun seedIfEmpty() {

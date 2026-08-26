@@ -75,7 +75,10 @@ fun FaithTab() {
     // Push-based triggers are handled by the `push` listener in sw.js.
     LaunchedEffect(Unit) {
         while (true) {
-            val now = T.now()
+            // T.now() is the UTC epoch, so `now % DAY_MS` gave the UTC hour:
+            // a routine set for 06:00 only fired at 08:00 in UTC+2, and after
+            // 22:00 local it compared against the *next* UTC day entirely.
+            val now = T.localNow()
             val hour = ((now % T.DAY_MS) / 3_600_000L).toInt()
             store.routines.items.value.forEach { r ->
                 val key = "notified.${r.id}.$today"
@@ -93,15 +96,13 @@ fun FaithTab() {
 
     // Segmented view switcher, same pattern as Life & Goals / Music / Today:
     // Routines, Reminders and Prayer were three separately-scrolled sections
-    // stacked on one screen. "Reminders" only earns its own segment once
-    // there's a routine to trigger a reminder for; otherwise there's nothing
-    // there for it to show yet.
+    // stacked on one screen.
     var view by rememberState("Routines")
-    val views = (
-        listOf("Routines") +
-            (if (routines.isNotEmpty()) listOf("Reminders") else emptyList()) +
-            listOf("Prayer")
-        )
+    // "Reminders" used to be hidden until at least one routine existed - but
+    // that segment holds the ONLY "Enable notifications" button in the app, so
+    // a fresh install could never grant permission and nothing ever alerted.
+    // It is always available now.
+    val views = listOf("Routines", "Reminders", "Prayer")
     if (view !in views) view = "Routines"
     val viewCounts = mapOf(
         "Routines" to "${routines.size}",

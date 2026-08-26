@@ -12,8 +12,20 @@ fun lsSet(key: String, value: String): Unit = js("localStorage.setItem(key, valu
 
 fun lsRemove(key: String): Unit = js("localStorage.removeItem(key)")
 
-/** High-resolution wall clock (ms since epoch). */
+/** High-resolution wall clock (ms since epoch, UTC). */
 fun jsNow(): Double = js("Date.now()")
+
+/**
+ * Minutes that must be ADDED to local time to get UTC, exactly as
+ * `Date.prototype.getTimezoneOffset()` defines it (so UTC+2 reports -120).
+ *
+ * Everything in [tassic.data.T] used to derive "today", weekday tags and
+ * reminder hours straight from the UTC epoch, which silently shifted the whole
+ * app by the device's UTC offset: in UTC+2 the day rolled over at 02:00 local
+ * and a routine set for 06:00 only fired at 08:00. Reading the real offset here
+ * lets the calendar maths run on local wall-clock time.
+ */
+fun jsTimezoneOffsetMinutes(): Double = js("new Date().getTimezoneOffset()")
 
 /** Opens a URL in a new browser tab (used for career resource links, product links). */
 fun openUrl(url: String): Unit = js("window.open(url, '_blank', 'noopener,noreferrer')")
