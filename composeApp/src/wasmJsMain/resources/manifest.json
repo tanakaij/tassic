@@ -2,26 +2,31 @@
     "id": "./",
     "name": "Tassic — Unified Life OS",
     "short_name": "Tassic",
-    "description": "A unified life management OS: goals, music studio, recovery tracking, calisthenics, career roadmaps, faith routines and a multimodal journal.",
+    "description": "A unified life management OS: goals, music studio, recovery tracking, calisthenics, career roadmaps, faith routines, insights and a multimodal journal.",
     "start_url": "./",
     "scope": "./",
     "display": "standalone",
+    "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
     "orientation": "portrait-primary",
     "background_color": "#BBD8EC",
     "theme_color": "#BBD8EC",
     "categories": ["productivity", "lifestyle", "health", "education"],
+    "launch_handler": {
+        "client_mode": ["navigate-existing", "auto"]
+    },
+    "prefer_related_applications": false,
     "icons": [
         {
             "src": "icons/icon-192.png",
             "sizes": "192x192",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "any"
         },
         {
             "src": "icons/icon-512.png",
             "sizes": "512x512",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "any"
         },
         {
             "src": "icons/maskable-512.png",
@@ -34,13 +39,13 @@
         {
             "name": "Tassic Today",
             "short_name": "Today",
-            "description": "Today's practice, open tasks and streaks at a glance, themed to match your device.",
+            "description": "Momentum, what's due, your streak and the single next thing worth doing.",
             "tag": "today",
             "ms_ac_template": "widgets/today-widget-template.json",
             "data": "widgets/today-widget-data.json",
             "type": "application/json",
             "auth": false,
-            "update": 3600,
+            "update": 1800,
             "icons": [
                 { "src": "icons/icon-192.png", "sizes": "192x192" }
             ],
@@ -57,13 +62,36 @@
         {
             "name": "Today",
             "short_name": "Today",
+            "description": "Your daily brief and checklists",
             "url": "./?tab=today",
+            "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Insights",
+            "short_name": "Insights",
+            "description": "Momentum, trends and what needs attention",
+            "url": "./?tab=insights",
             "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
         },
         {
             "name": "New Journal Entry",
             "short_name": "Journal",
+            "description": "Write or record today's entry",
             "url": "./?tab=journal",
+            "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Music Studio",
+            "short_name": "Music",
+            "description": "Today's shape, mode and key",
+            "url": "./?tab=music",
+            "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Reminder Settings",
+            "short_name": "Settings",
+            "description": "Notification rules and delivery diagnostics",
+            "url": "./?tab=settings",
             "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
         }
     ]

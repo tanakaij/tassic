@@ -19,18 +19,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import tassic.data.FaithRoutine
 import tassic.data.Graph
 import tassic.data.PrayerPoint
+import tassic.data.Reminders
 import tassic.data.T
 import tassic.platform.Notifications
 import tassic.platform.awaitOrNull
@@ -44,6 +43,7 @@ import tassic.ui.components.SecondaryButton
 import tassic.ui.components.rememberSheetScope
 import tassic.ui.components.rememberState
 import tassic.ui.components.SectionHeader
+import tassic.ui.components.SegmentedControl
 import tassic.ui.components.SelectChips
 import tassic.ui.components.TabScaffold
 import tassic.ui.components.TassicCard
@@ -71,25 +71,9 @@ fun FaithTab() {
     var prayerOpen by rememberState(false)
     var prayerEdit by rememberState<PrayerPoint?>(null)
 
-    // In-app scheduled triggers: fire routine reminders while the app is open.
-    // Push-based triggers are handled by the `push` listener in sw.js.
-    LaunchedEffect(Unit) {
-        while (true) {
-            // T.now() is the UTC epoch, so `now % DAY_MS` gave the UTC hour:
-            // a routine set for 06:00 only fired at 08:00 in UTC+2, and after
-            // 22:00 local it compared against the *next* UTC day entirely.
-            val now = T.localNow()
-            val hour = ((now % T.DAY_MS) / 3_600_000L).toInt()
-            store.routines.items.value.forEach { r ->
-                val key = "notified.${r.id}.$today"
-                if (r.reminderOn && hour >= r.reminderHour && store.routineDueToday(r) && store.metaGet(key) == null) {
-                    Notifications.show("Tassic · ${r.title}", "Time for your routine.")
-                    store.metaSet(key, "1")
-                }
-            }
-            delay(60_000)
-        }
-    }
+    // The routine-reminder poll that used to live here has moved into the
+    // single app-wide loop in App.kt. Running it from inside this tab meant
+    // Faith reminders only fired while the Faith tab was actually on screen.
 
     val active = prayers.filter { !it.answered }
     val answered = prayers.filter { it.answered }.sortedByDescending { it.answeredAt ?: 0 }
@@ -115,7 +99,7 @@ fun FaithTab() {
         fabLabel = if (view == "Prayer") "New Prayer" else null,
         onFab = if (view == "Prayer") ({ prayerEdit = null; prayerOpen = true }) else null
     ) {
-        SelectChips(views, view, label = { "$it (${viewCounts[it]})" }) { view = it }
+        SegmentedControl(views, view, badge = { viewCounts[it] }) { view = it }
 
         // ---- Routines -------------------------------------------------------
         if (view == "Routines") {
@@ -184,13 +168,13 @@ fun FaithTab() {
         // ---- Notifications ------------------------------------------------------
         if (view == "Reminders") {
         TassicCard {
-            SectionHeader("Reminder Triggers", "Web Notification API + sw.js push")
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionHeader("Reminder Triggers", "Delivery status for this device")
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
                 Icon(Icons.Filled.Notifications, contentDescription = null, tint = Navy)
                 Spacer(Modifier.width(10.dp))
                 Text(
                     when (perm) {
-                        "granted" -> "Notifications enabled"
+                        "granted" -> "Notifications enabled on this device"
                         "denied" -> "Blocked in browser settings"
                         "unsupported" -> "Not supported on this browser"
                         else -> "Permission not granted yet"
@@ -199,18 +183,32 @@ fun FaithTab() {
                     modifier = Modifier.weight(1f)
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 10.dp)) {
+            Text(
+                "Routine reminders now run from the app-wide scheduler, so they fire " +
+                    "no matter which tab is open — and are handed to the service worker " +
+                    "so they can still arrive while Tassic is closed.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Muted,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
                 if (perm != "granted") {
                     SecondaryButton("Enable notifications", {
                         cs.launch {
                             Notifications.request().awaitOrNull()
                             perm = Notifications.permission()
-                            if (perm == "granted") Notifications.show("Tassic", "Reminders are now enabled.")
+                            store.metaSet("notify.permission", perm)
+                            if (perm == "granted") {
+                                Notifications.registerBackgroundDelivery()
+                                Reminders.syncSchedule(store)
+                                Notifications.show("Tassic", "Reminders are now enabled.")
+                            }
                         }
                     })
                 }
-                GhostButton("Send test notification", { Notifications.show("Tassic", "Reminders are alive.") })
+                GhostButton("Send test", { Reminders.sendTest(store) })
             }
+            GhostButton("Full reminder settings", { feedback.launchSnackbar("Open the Settings tab for quiet hours, digests and diagnostics.") })
         }
         }
 

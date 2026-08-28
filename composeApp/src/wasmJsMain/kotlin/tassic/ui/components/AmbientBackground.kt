@@ -8,7 +8,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,13 +20,10 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
-import tassic.ui.theme.Amber
 import tassic.ui.theme.Coral
-import tassic.ui.theme.Navy
+import tassic.ui.theme.LocalReduceMotion
+import tassic.ui.theme.LocalTokens
 import tassic.ui.theme.NavySoft
-import tassic.ui.theme.SkyBlue
-import tassic.ui.theme.SkyDeep
-import tassic.ui.theme.SkySoft
 
 /**
  * Soft, continuously-flowing colour wash behind the app content — a smooth
@@ -47,14 +43,18 @@ import tassic.ui.theme.SkySoft
  */
 @Composable
 fun AmbientBackground(modifier: Modifier = Modifier) {
-    // Matches the device's light/dark setting, same as TassicTheme, so the
-    // wallpaper doesn't stay a bright sky wash on a phone in dark mode.
-    val dark = isSystemInDarkTheme()
-    val baseA = if (dark) Navy else SkySoft
-    val baseB = if (dark) NavySoft else SkyBlue
-    val baseC = if (dark) Color(0xFF0A1B30) else SkyDeep
-    val canvasBase = if (dark) Navy else SkyBlue
-    val warmBlob = if (dark) NavySoft else SkySoft
+    // Reads the resolved token set rather than the raw system setting, so a
+    // user who forces light or dark in Settings gets a matching wallpaper
+    // instead of one that follows the OS independently of the rest of the UI.
+    val t = LocalTokens.current
+    val reduceMotion = LocalReduceMotion.current
+    val dark = t.dark
+    val baseA = t.canvasTop
+    val baseB = t.canvasMid
+    val baseC = t.canvasBottom
+    val canvasBase = t.canvasMid
+    val warmBlob = t.canvasTop
+    val accent = t.accent
 
     val transition = rememberInfiniteTransition(label = "ambient")
 
@@ -63,7 +63,7 @@ fun AmbientBackground(modifier: Modifier = Modifier) {
     // period of the same clock (instead of its own reversing tween), the
     // whole scene flows continuously in one direction with no jarring
     // direction-change moment — the hallmark of the Apple Music look.
-    val clock by transition.animateFloat(
+    val animatedClock by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
@@ -72,6 +72,9 @@ fun AmbientBackground(modifier: Modifier = Modifier) {
         ),
         label = "ambientClock"
     )
+    // Reduce-motion parks the wash at a fixed, pleasant phase rather than
+    // removing it — the depth stays, the movement doesn't.
+    val clock = if (reduceMotion) 0.18f else animatedClock
 
     Canvas(
         modifier
@@ -99,7 +102,7 @@ fun AmbientBackground(modifier: Modifier = Modifier) {
         }
 
         softBlob(orbit(w * 0.30f, h * 0.28f, w * 0.16f, 0.00f, 1.0f), diag * 0.55f, warmBlob, 0.95f)
-        softBlob(orbit(w * 0.82f, h * 0.18f, w * 0.14f, 0.33f, 0.8f), diag * 0.42f, Amber, if (dark) 0.22f else 0.40f)
+        softBlob(orbit(w * 0.82f, h * 0.18f, w * 0.14f, 0.33f, 0.8f), diag * 0.42f, accent, if (dark) 0.22f else 0.40f)
         softBlob(orbit(w * 0.88f, h * 0.75f, w * 0.18f, 0.60f, 1.2f), diag * 0.48f, Coral, if (dark) 0.16f else 0.28f)
         softBlob(orbit(w * 0.16f, h * 0.82f, w * 0.15f, 0.15f, 0.9f), diag * 0.50f, baseC, 0.55f)
         softBlob(orbit(w * 0.55f, h * 0.55f, w * 0.10f, 0.80f, 0.6f), diag * 0.38f, NavySoft, if (dark) 0.35f else 0.16f)

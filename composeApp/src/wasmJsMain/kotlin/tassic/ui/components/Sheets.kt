@@ -56,6 +56,7 @@ import tassic.data.TodoItem
 import tassic.data.WorkoutItem
 import tassic.ui.theme.Amber
 import tassic.ui.theme.Coral
+import tassic.ui.theme.LocalTokens
 import tassic.ui.theme.Muted
 import tassic.ui.theme.Navy
 import tassic.ui.theme.SkyDeep
@@ -71,16 +72,18 @@ fun TabScaffold(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val hasFab = onFab != null && fabLabel != null && fabIcon != null
+    val t = LocalTokens.current
     Box(Modifier.fillMaxSize()) {
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                // Extra bottom padding reserves room for the floating FAB
-                // (its own height + bottom inset + breathing room) so the
-                // last card in the list scrolls clear of it instead of
-                // sitting underneath/behind it.
-                .padding(start = 16.dp, end = 16.dp, bottom = if (hasFab) 96.dp else 24.dp),
+                // Reserves room for the floating FAB so the last card scrolls
+                // clear of it. The bottom navigation bar is already accounted
+                // for by the Scaffold inset this composable is placed inside,
+                // so no navigationBarsPadding here — applying it twice used to
+                // leave a dead band above the nav.
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = if (hasFab) 88.dp else 28.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content
         )
@@ -89,12 +92,12 @@ fun TabScaffold(
                 onClick = onFab,
                 icon = { Icon(fabIcon, contentDescription = null) },
                 text = { Text(fabLabel) },
-                containerColor = Amber,
-                contentColor = Navy,
+                containerColor = t.accent,
+                contentColor = t.onAccent,
+                shape = RoundedCornerShape(18.dp),
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .navigationBarsPadding()
-                    .padding(20.dp)
+                    .padding(end = 8.dp, bottom = 12.dp)
             )
         }
     }
@@ -115,8 +118,8 @@ fun TassicSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Color.White,
-        shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
+        containerColor = LocalTokens.current.card,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
         dragHandle = {
             Box(
@@ -232,6 +235,8 @@ fun TodoSheet(edit: TodoItem?, onDismiss: () -> Unit) {
     )
 
     var tags by rememberState(ed?.tags?.joinToString(", ") ?: "")
+    var recurrence by rememberState(ed?.recurrence?.ifBlank { "NONE" } ?: "NONE")
+    var estimate by rememberState(ed?.estimateMinutes ?: 0)
 
     TassicSheet(title = if (edit == null) "New Task" else "Edit Task", onDismiss = onDismiss) {
         LabeledField(title, { title = it }, "Title", placeholder = "What needs doing?")
@@ -273,13 +278,39 @@ fun TodoSheet(edit: TodoItem?, onDismiss: () -> Unit) {
             SelectChips(ReminderLead.entries.toList(), reminder, label = { it.label }) { reminder = it }
             if (reminder != ReminderLead.NONE && tassic.platform.Notifications.permission() != "granted") {
                 Text(
-                    "Notifications aren't enabled yet - turn them on from the Faith tab so this reminder can actually alert you.",
+                    "Notifications aren't enabled yet - turn them on in Settings so this reminder can actually alert you.",
                     style = MaterialTheme.typography.bodySmall,
                     color = Coral,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
         }
+
+        // Repeat rule. A task list without recurrence can't hold real routines —
+        // the user ends up re-creating "water the plants" by hand every week.
+        FieldLabel("Repeat")
+        SelectChips(
+            listOf("NONE", "DAILY", "WEEKDAYS", "WEEKLY", "FORTNIGHTLY", "MONTHLY"),
+            recurrence,
+            label = { store.recurrenceLabel(it) }
+        ) { recurrence = it }
+        if (recurrence != "NONE" && due == DueChoice.NONE) {
+            Text(
+                "A repeating task needs a due date to roll forward from.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Coral,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+
+        FieldLabel("Estimate")
+        Stepper(
+            "Rough effort",
+            estimate,
+            { estimate = it },
+            range = 0..480,
+            suffix = "m"
+        )
 
         LabeledField(tags, { tags = it }, "Tags", placeholder = "comma, separated")
         SheetActions(
@@ -303,6 +334,9 @@ fun TodoSheet(edit: TodoItem?, onDismiss: () -> Unit) {
                     // A changed due date/time re-arms the reminder even if a
                     // previous one already fired for the old date.
                     reminderFired = if (edit != null && dueDay == ed?.dueEpochDay && dueMinutes == ed.dueTimeMinutes) ed.reminderFired else false,
+                    snoozedUntilMs = null,
+                    recurrence = if (dueDay != null && recurrence != "NONE") recurrence else "",
+                    estimateMinutes = if (estimate > 0) estimate else null,
                     tags = tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                 )
                 if (edit == null) store.addTodo(item) else store.updateTodo(item)

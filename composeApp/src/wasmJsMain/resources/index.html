@@ -6,8 +6,9 @@
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#BBD8EC" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#0F2B4C" media="(prefers-color-scheme: dark)">
+    <meta name="color-scheme" content="light dark">
     <meta name="description"
-          content="Tassic — a unified life management OS: goals, music studio, recovery, fitness, faith routines, journaling and more.">
+          content="Tassic — a unified life management OS: goals, music studio, recovery, fitness, faith routines, journaling and insights.">
     <title>Tassic · Life OS</title>
 
     <link rel="manifest" href="manifest.json">
@@ -24,10 +25,13 @@
     <div id="webApp"></div>
 
     <div id="splash" aria-hidden="true">
-        <img src="logo.png" alt="Tassic logo" draggable="false">
+        <div class="glow"></div>
+        <div class="mark">
+            <img src="logo.png" alt="Tassic logo" draggable="false">
+        </div>
         <div class="wordmark">Tassic</div>
         <div class="tagline">Your Unified Life OS</div>
-        <div class="spinner"></div>
+        <div class="bar"><span></span></div>
     </div>
 
     <div id="tassic-exit-toast" aria-hidden="true">Swipe back again to exit</div>
@@ -36,25 +40,76 @@
 
     <script src="skiko.js"></script>
     <script src="composeApp.js"></script>
+
+    <script>
+        // ---- Notification action queue -------------------------------------
+        // The service worker handles "Mark done" / "Snooze" taps while the app
+        // is closed, but a worker cannot write localStorage and the Compose app
+        // cannot read the Cache API synchronously. So the worker parks actions
+        // in a cache entry and this bridge moves them into localStorage, where
+        // the Kotlin store drains and applies them on its next scheduler tick.
+        (function () {
+            var ACTIONS_URL = './__tassic/actions.json';
+            var KEY = 'tassic.actionQueue';
+
+            function append(actions) {
+                if (!actions || !actions.length) return;
+                var existing = [];
+                try { existing = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) {}
+                if (!Array.isArray(existing)) existing = [];
+                localStorage.setItem(KEY, JSON.stringify(existing.concat(actions).slice(-100)));
+            }
+
+            function drainFromCache() {
+                if (!('caches' in window)) return;
+                caches.match(ACTIONS_URL)
+                    .then(function (res) { return res ? res.json() : null; })
+                    .then(function (list) {
+                        if (!list || !list.length) return;
+                        append(list);
+                        // Tell the worker we've taken ownership so it can clear
+                        // its copy — otherwise the same action replays forever.
+                        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                            navigator.serviceWorker.controller.postMessage({ type: 'ACTIONS_DRAINED' });
+                        }
+                    })
+                    .catch(function () {});
+            }
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('message', function (event) {
+                    var msg = event.data;
+                    if (msg && msg.type === 'TASSIC_ACTION' && msg.action) {
+                        append([msg.action]);
+                    }
+                });
+            }
+
+            drainFromCache();
+            // Re-drain when the app comes back to the foreground: this is the
+            // moment a user who just tapped a notification arrives back here.
+            document.addEventListener('visibilitychange', function () {
+                if (!document.hidden) drainFromCache();
+            });
+            window.addEventListener('focus', drainFromCache);
+        })();
+    </script>
+
     <script>
         // ---- Service worker + offline precache -----------------------------
-        // Registering alone was not enough to make the app launch offline. A
-        // service worker only starts intercepting fetches once it activates and
-        // claims clients, which happens well after the page has already fired
-        // its own uncontrolled requests for composeApp.js / composeApp.wasm /
-        // skiko.* and the content-hashed chunks around them. On a device that
-        // installed the app once and was never fully reloaded online again,
-        // those binaries never entered the cache at all, so the first genuinely
-        // offline open sat on the splash spinner forever.
-        //
-        // Hardcoding filenames in sw.js can't fix that either, because webpack
-        // content-hashes them. So the page reports what it *actually* loaded,
-        // read straight out of Resource Timing, and the worker caches that list.
+        // Registering alone is not enough to make the app launch offline. A
+        // worker only starts intercepting fetches once it activates and claims
+        // clients, which happens well after the page has already fired its own
+        // uncontrolled requests for composeApp.js / composeApp.wasm / skiko.*
+        // and the content-hashed chunks around them. Hardcoding filenames in
+        // sw.js can't fix that either, because webpack content-hashes them —
+        // so the page reports what it actually loaded, read straight out of
+        // Resource Timing, and the worker caches that list.
         (function () {
             if (!('serviceWorker' in navigator)) return;
 
             // The Resource Timing buffer defaults to 250 entries and silently
-            // drops the rest - Compose resources alone can exceed that.
+            // drops the rest — Compose resources alone can exceed that.
             try { performance.setResourceTimingBufferSize(1000); } catch (e) {}
 
             var registration = null;
@@ -73,32 +128,46 @@
                 } catch (e) {}
             }
 
+            function registerBackgroundDelivery(reg) {
+                // Periodic background sync is the only primitive that lets a
+                // backend-less PWA be woken later to deliver a reminder. It's
+                // gated on install + engagement and unavailable on some
+                // platforms, which the Settings → Diagnostics panel reports.
+                try {
+                    if (reg.periodicSync) {
+                        reg.periodicSync.register('tassic-reminders', {
+                            minInterval: 30 * 60 * 1000
+                        }).catch(function () {});
+                        reg.periodicSync.register('tassic-widget-refresh', {
+                            minInterval: 60 * 60 * 1000
+                        }).catch(function () {});
+                    }
+                    if (reg.sync) {
+                        reg.sync.register('tassic-catchup').catch(function () {});
+                    }
+                } catch (e) {}
+            }
+
             navigator.serviceWorker.register('sw.js', { scope: './' })
                 .then(function (reg) {
                     registration = reg;
                     return navigator.serviceWorker.ready;
                 })
-                .then(function () {
-                    // Immediately, then again as late-loading chunks (fonts,
-                    // Compose resources, lazily fetched assets) come in.
+                .then(function (reg) {
                     reportLoadedAssets();
                     setTimeout(reportLoadedAssets, 5000);
                     setTimeout(reportLoadedAssets, 20000);
+                    registerBackgroundDelivery(reg);
+                    // Ask the worker to catch up on anything that fell due
+                    // while the app was closed.
+                    var target = reg.active || navigator.serviceWorker.controller;
+                    if (target) target.postMessage({ type: 'CHECK_REMINDERS' });
                 })
                 .catch(function () {});
 
             window.addEventListener('load', function () {
                 setTimeout(reportLoadedAssets, 1500);
             });
-
-            // Opportunistic widget refresh in the background where supported.
-            navigator.serviceWorker.ready.then(function (reg) {
-                if (reg.periodicSync) {
-                    reg.periodicSync.register('tassic-widget-refresh', {
-                        minInterval: 60 * 60 * 1000
-                    }).catch(function () {});
-                }
-            }).catch(function () {});
         })();
     </script>
 
@@ -106,18 +175,15 @@
         // ---- Splash safety net ---------------------------------------------
         // hideSplash() only runs once Compose paints. If the Wasm bundle can't
         // load (missing from cache on a cold offline start, corrupt download),
-        // the user just stared at a spinner with no way out and no explanation.
+        // the user otherwise just stares at a spinner with no way out.
         (function () {
             setTimeout(function () {
                 var splash = document.getElementById('splash');
                 if (!splash) return;
                 var note = document.createElement('div');
-                note.className = 'tagline';
-                note.style.marginTop = '18px';
-                note.style.maxWidth = '18rem';
-                note.textContent = 'Still loading. Tap to retry - if you are offline, ' +
+                note.className = 'retry';
+                note.textContent = 'Still loading. Tap to retry — if you are offline, ' +
                     'open Tassic once with a connection to finish caching it.';
-                note.style.cursor = 'pointer';
                 note.onclick = function () { location.reload(); };
                 splash.appendChild(note);
             }, 20000);
@@ -126,11 +192,10 @@
 
     <script>
         // ---- Double-back-to-exit guard -------------------------------------
-        // Only installed apps (TWA / "Add to Home Screen") get a bare back
-        // gesture that closes the app on the very first swipe, because there's
-        // no browser history to fall back to. A normal browser tab already has
-        // real back/forward behaviour, so this only activates in standalone
-        // display mode to avoid interfering with that.
+        // Only installed apps get a bare back gesture that closes the app on the
+        // first swipe, because there's no browser history to fall back on. A
+        // normal tab already has real back/forward behaviour, so this only
+        // activates in standalone display mode.
         (function () {
             var isStandalone =
                 window.matchMedia('(display-mode: standalone)').matches ||
@@ -153,22 +218,16 @@
                 }, 1800);
             }
 
-            // Seed one guard entry so the very first back press is
-            // interceptable instead of immediately exiting.
             pushGuard();
 
             window.addEventListener('popstate', function () {
                 if (!armed) {
-                    // First back press: re-arm the guard, show the hint,
-                    // and give the user ~2s to press back again to exit.
                     pushGuard();
                     showToast();
                     armed = true;
                     clearTimeout(armTimer);
                     armTimer = setTimeout(function () { armed = false; }, 2000);
                 } else {
-                    // Second back press within the window: let it proceed.
-                    // No guard is re-pushed, so the next back genuinely exits.
                     clearTimeout(armTimer);
                 }
             });

@@ -29,8 +29,38 @@
                             "text": "Tassic — Today",
                             "weight": "Bolder",
                             "size": "Medium",
-                            "color": "Default",
                             "wrap": true
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "${dayLabel}",
+                            "isSubtle": true,
+                            "size": "Small",
+                            "spacing": "None",
+                            "wrap": true
+                        }
+                    ]
+                },
+                {
+                    "type": "Column",
+                    "width": "auto",
+                    "verticalContentAlignment": "Center",
+                    "items": [
+                        {
+                            "type": "TextBlock",
+                            "text": "${momentum}%",
+                            "weight": "Bolder",
+                            "size": "Large",
+                            "color": "Accent",
+                            "horizontalAlignment": "Right"
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "momentum",
+                            "isSubtle": true,
+                            "size": "Small",
+                            "spacing": "None",
+                            "horizontalAlignment": "Right"
                         }
                     ]
                 }
@@ -38,9 +68,8 @@
         },
         {
             "type": "TextBlock",
-            "text": "${dayLabel}",
-            "isSubtle": true,
-            "spacing": "Small",
+            "text": "${headline}",
+            "spacing": "Medium",
             "wrap": true
         },
         {
@@ -64,6 +93,7 @@
                             "text": "modules done",
                             "isSubtle": true,
                             "size": "Small",
+                            "spacing": "None",
                             "horizontalAlignment": "Center",
                             "wrap": true
                         }
@@ -86,6 +116,7 @@
                             "text": "tasks open",
                             "isSubtle": true,
                             "size": "Small",
+                            "spacing": "None",
                             "horizontalAlignment": "Center",
                             "wrap": true
                         }
@@ -108,6 +139,7 @@
                             "text": "day streak",
                             "isSubtle": true,
                             "size": "Small",
+                            "spacing": "None",
                             "horizontalAlignment": "Center",
                             "wrap": true
                         }
@@ -116,10 +148,41 @@
             ]
         },
         {
-            "type": "TextBlock",
-            "text": "${focusTitle}",
-            "weight": "Bolder",
+            "type": "Container",
             "spacing": "Medium",
+            "style": "emphasis",
+            "bleed": true,
+            "items": [
+                {
+                    "type": "TextBlock",
+                    "text": "START WITH",
+                    "size": "Small",
+                    "isSubtle": true,
+                    "spacing": "None"
+                },
+                {
+                    "type": "TextBlock",
+                    "text": "${nextAction}",
+                    "weight": "Bolder",
+                    "spacing": "None",
+                    "wrap": true
+                },
+                {
+                    "type": "TextBlock",
+                    "text": "${nextReason}",
+                    "size": "Small",
+                    "isSubtle": true,
+                    "spacing": "None",
+                    "wrap": true
+                }
+            ]
+        },
+        {
+            "type": "TextBlock",
+            "text": "Focus: ${focusTitle}",
+            "size": "Small",
+            "isSubtle": true,
+            "spacing": "Small",
             "wrap": true
         }
     ],
@@ -128,6 +191,11 @@
             "type": "Action.OpenUrl",
             "title": "Open Tassic",
             "url": "./?tab=today"
+        },
+        {
+            "type": "Action.OpenUrl",
+            "title": "Insights",
+            "url": "./?tab=insights"
         }
     ]
 }

@@ -46,6 +46,7 @@ import tassic.ui.components.IconActionBtn
 import tassic.ui.components.ItemMenu
 import tassic.ui.components.JournalComposerSheet
 import tassic.ui.components.Pill
+import tassic.ui.components.SegmentedControl
 import tassic.ui.components.SelectChips
 import tassic.ui.components.StatTile
 import tassic.ui.components.rememberSheetScope
@@ -85,7 +86,7 @@ fun JournalTab() {
         onFab = { composerEdit = null; composerOpen = true }
     ) {
         if (hasRecovery) {
-            SelectChips(listOf("Journal", "Recovery"), view) { view = it }
+            SegmentedControl(listOf("Journal", "Recovery"), view) { view = it }
         }
         val showJournal = !hasRecovery || view == "Journal"
         val showRecovery = hasRecovery && view == "Recovery"
@@ -104,7 +105,7 @@ fun JournalTab() {
         // ---- Entries -----------------------------------------------------------
         if (showJournal) {
         SectionHeader("Journal", "${entries.size} multimodal entries")
-        SelectChips(listOf("All", "Voice", "Text"), filter) { filter = it }
+        SegmentedControl(listOf("All", "Voice", "Text"), filter) { filter = it }
         val filtered = entries.filter {
             when (filter) {
                 "Voice" -> it.audioId != null

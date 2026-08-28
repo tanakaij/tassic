@@ -20,6 +20,110 @@ splash screen, in-app header, PWA icons and the Android launcher.
 | **Life & Goals** | Things-3-style standalone goals (short/medium/long horizon, progress, target dates), purchases & wishlist (priority, target price, links, purchased toggle), GeoDev roadmap (5 seeded stages with free resource links, multi-path, portfolio build log → journal) |
 | **Faith** | Recurring routines (Daily Bible Reading, Thursday Fasting, Praying Mountain trips) with Web Notification triggers, prayer points manager with answered-prayer timestamps |
 | **Journal** | Day-One-style multimodal entries (rich text with `#`/`-` formatting, 1–5 mood, **voice notes via MediaRecorder → IndexedDB**), recovery history with trigger reflection log |
+| **Insights** | Momentum score, 28-day trend + contribution heatmap, per-domain balance bars, ranked observations with the evidence behind each, and a generated week-in-review |
+| **Settings** | Theme/accent/motion, reminder rules, quiet hours, digest schedule, home-surface toggles, and a delivery-diagnostics panel |
+
+---
+
+## v2 — intelligence, delivery and the design pass
+
+### The intelligence layer
+
+`data/Insights.kt` is a pure, dependency-free analytics engine over the store.
+Nothing in it is invented: every observation names the rows that produced it.
+
+- **Momentum score (0–100)** per domain — practice, fitness, tasks, faith,
+  recovery — each an explainable ratio of what happened to what was scheduled,
+  with a week-over-week delta.
+- **Pattern detection**: recovery resets clustered by weekday and 6-hour block;
+  goal pace vs. elapsed time with the required weekly rate to catch up; task
+  inflow vs. outflow; mood trend and the mood-on-training-days association
+  (stated as an association in the user's own log, not a causal claim);
+  most-productive hour window; quietest weekday; album completion projected from
+  observed learning rate.
+- **Ranked next actions** blending urgency with time of day, so an evening open
+  surfaces different work from a morning one.
+- **Generated week in review**, reused as the body of the weekly notification.
+
+This required a new `ActivityLog` table. The previous schema only stored
+*current* state — `doneEpochDay` is the last time something was ticked, not a
+history — so nothing could answer "how did this week compare to last week".
+Every completion path now writes one small row, capped at 4,000 entries.
+`TodoItem` also gained `completedAt`, without which no completion-rate analytics
+were possible at all.
+
+### Why notifications weren't working, and what changed
+
+Four separate causes, all fixed:
+
+1. **Reminders only ran while a specific tab was open.** The faith-routine poll
+   lived inside `FaithTab`, so a routine reminder could only fire while you were
+   sitting on the Faith tab. There is now one app-wide scheduler in `App.kt`.
+2. **Nothing could fire while the app was closed.** A page timer dies with the
+   page. The app now hands sw.js a rolling 7-day schedule, and the worker
+   delivers on *every* wake it gets — periodic sync, one-off sync, push, a
+   notification click, or any navigation. A backend-less PWA cannot be woken at
+   an exact minute by anything, but this is the difference between "sometimes"
+   and "never".
+3. **Notifications had no actions and no follow-through.** Reminders now carry
+   *Mark done* and *Snooze*. Because a worker can't write localStorage and
+   Compose can't read the Cache API synchronously, the worker parks actions in a
+   cache entry and a bridge in `index.html` moves them into localStorage, where
+   the store replays them on the next tick.
+4. **Failures were invisible.** Settings → Diagnostics now names the exact
+   cause: permission state, whether a worker is controlling the page, whether
+   the app is installed, and whether periodic background sync exists here.
+
+Added alongside: quiet hours that *hold* rather than drop suppressed reminders,
+a morning brief, an evening streak-at-risk nudge, and a weekly review.
+
+### Why the widget wasn't appearing
+
+The Widgets API (`self.widgets`) only has a host on Windows, via the Edge
+widgets board. On Android there is no PWA home-screen widget to install, so no
+amount of manifest work would have produced one. The lifecycle handlers are
+fixed and the payload is now real rather than a static placeholder, but the
+honest Android answers are the two surfaces a PWA *can* own, both now
+implemented:
+
+- **Badging API** — the outstanding count on the installed app icon.
+- **Pinned "Today at a glance" notification** — silent and sticky, carrying
+  momentum, what's due and the next action. This is the practical widget
+  substitute, and it's an opt-in toggle.
+
+App shortcuts were expanded to five (Today, Insights, Journal, Music, Settings).
+
+### Design pass
+
+- **Semantic token layer** (`TassicTokens`) replaces raw palette constants.
+  Components previously referenced `CardWhite` and `Navy` directly, so dark mode
+  only worked where someone had remembered to branch on it — cards stayed pure
+  white on a navy canvas. Everything now asks for "the card colour".
+- **Bottom navigation.** A drawer alone is the wrong primary navigation for a
+  multi-section mobile app: every section change cost a swipe plus a tap, and
+  nothing on screen indicated where you were.
+- **New surfaces** — hero, glass, ink, sunken — so a headline stat and a
+  checkbox row no longer carry identical visual weight.
+- **Charts**, all Canvas-drawn with no dependencies: progress ring, sparkline,
+  bar rows, contribution heatmap.
+- **Segmented control** replacing FilterChips used as a view switcher (chips
+  read as multi-select filters; these are one-of-N).
+- Manual light/dark override, five accent colours, and a reduce-motion setting
+  that parks the ambient wallpaper instead of removing the depth.
+- Refined type scale with proper tracking, contextual header with a time-of-day
+  greeting, press-scale feedback, count-up numbers, and a rebuilt splash.
+
+### Other gaps closed
+
+- **Recurring tasks** (`DAILY` / `WEEKDAYS` / `WEEKLY` / `FORTNIGHTLY` /
+  `MONTHLY`). Completing one rolls the due date forward and re-arms the reminder
+  instead of retiring it — without this a task list can't hold real routines.
+- **Effort estimates** on tasks, feeding a "today's load" figure.
+- **Snooze** with a configurable interval.
+- Per-day notification bookkeeping keys are now pruned; they previously
+  accumulated in localStorage forever.
+
+---
 
 **Every seeded preset is ordinary editable data**: rename, re-schedule, retarget,
 reorder or delete anything; add custom habits, shapes, styles, modules, exercises,
@@ -43,9 +147,9 @@ Tassic/
         └── wasmJsMain/
             ├── kotlin/tassic/
             │   ├── Main.kt               # ComposeViewport entrypoint
-            │   ├── platform/             # Browser, AudioRecorder, AudioStore, Notifications
-            │   ├── data/                 # Models, Seeds (editable presets), Store, Time
-            │   └── ui/                   # App shell, theme, components, sheets, 5 tabs
+            │   ├── platform/             # Browser, AudioRecorder, AudioStore, Notifications/Badge/Widgets
+            │   ├── data/                 # Models, Settings, Seeds, Store, Time, Insights, Reminders
+            │   └── ui/                   # App shell, theme, components, charts, sheets, 7 tabs
             └── resources/                # index.html, styles.css, manifest.json, sw.js, icons/
 ```
 

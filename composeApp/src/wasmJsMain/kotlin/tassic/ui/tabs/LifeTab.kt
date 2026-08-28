@@ -44,6 +44,7 @@ import tassic.ui.components.JournalComposerSheet
 import tassic.ui.components.MilestoneSheet
 import tassic.ui.components.Pill
 import tassic.ui.components.PrimaryButton
+import tassic.ui.components.SegmentedControl
 import tassic.ui.components.SelectChips
 import tassic.ui.components.rememberState
 import tassic.ui.components.SectionHeader
@@ -101,7 +102,7 @@ fun LifeTab() {
     }
 
     TabScaffold(fabIcon = Icons.Filled.Add, fabLabel = fabLabel, onFab = onFab) {
-        SelectChips(listOf("Goals", "Wishlist", "GeoDev"), view) { view = it }
+        SegmentedControl(listOf("Goals", "Wishlist", "GeoDev"), view) { view = it }
 
         when (view) {
             "Wishlist" -> {

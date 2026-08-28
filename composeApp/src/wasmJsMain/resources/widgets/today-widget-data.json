@@ -3,5 +3,15 @@
     "modulesDone": "0",
     "openTodos": "0",
     "streakDays": "0",
-    "focusTitle": "No shape scheduled yet"
+    "focusTitle": "No shape scheduled yet",
+    "headline": "Open Tassic once to sync your day.",
+    "nextAction": "Nothing pending",
+    "nextReason": "",
+    "momentum": "0",
+    "momentumValue": 0,
+    "dueToday": 0,
+    "doneToday": 0,
+    "overdue": 0,
+    "badge": 0,
+    "progressLabel": ""
 }

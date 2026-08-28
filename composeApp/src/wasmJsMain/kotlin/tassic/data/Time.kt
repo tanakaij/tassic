@@ -10,6 +10,9 @@ object T {
 
     val DAY_TAGS = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
     private val DAY_NAMES = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    private val DAY_NAMES_FULL = listOf(
+        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+    )
     private val MONTHS = listOf(
         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
@@ -39,6 +42,26 @@ object T {
     fun dayTagOf(epochDay: Long): String = DAY_TAGS[dowIndex(epochDay)]
 
     fun dayName(epochDay: Long): String = DAY_NAMES[dowIndex(epochDay)]
+
+    /** Full weekday name from a 0=Monday index (used by pattern-detection copy). */
+    fun dayNameFull(dow: Int): String = DAY_NAMES_FULL[((dow % 7) + 7) % 7]
+
+    fun dayNameFullOf(epochDay: Long): String = DAY_NAMES_FULL[dowIndex(epochDay)]
+
+    /** Current local hour, 0..23. */
+    fun localHour(): Int = ((localNow() % DAY_MS) / 3_600_000L).toInt()
+
+    /** Current minutes since local midnight, 0..1439. */
+    fun localMinuteOfDay(): Int = ((localNow() % DAY_MS) / 60_000L).toInt()
+
+    /** Local hour of a stored UTC timestamp, 0..23. */
+    fun hourOf(epochMs: Long): Int = (((epochMs + tzOffsetMs()) % DAY_MS) / 3_600_000L).toInt()
+
+    /** Month name for a local calendar day. */
+    fun monthName(epochDay: Long): String {
+        val (_, m, _) = civilFromDays(epochDay)
+        return MONTHS[(m - 1).toInt()]
+    }
 
     fun isWeekend(epochDay: Long): Boolean = dowIndex(epochDay) >= 5
 

@@ -1,11 +1,13 @@
 package tassic.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -55,13 +57,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import tassic.ui.theme.Amber
 import tassic.ui.theme.Blue
+import tassic.ui.theme.LocalTokens
+import tassic.ui.theme.accentGradient
 import tassic.ui.theme.CardWhite
 import tassic.ui.theme.Coral
 import tassic.ui.theme.Ink
@@ -101,15 +108,25 @@ fun Modifier.spacerW(dp: Int): Modifier = this.then(Modifier.width(dp.dp))
 @Composable
 fun TassicCard(
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    // Reads its fill from the token set rather than the hardcoded CardWhite it
+    // used before, which is why cards stayed glaring white in dark mode.
+    val t = LocalTokens.current
+    val shape = RoundedCornerShape(t.radiusCard.dp)
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = CardWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = if (onClick != null) {
+            modifier.fillMaxWidth().pressable(onClick = onClick)
+        } else {
+            modifier.fillMaxWidth()
+        },
+        shape = shape,
+        colors = CardDefaults.cardColors(containerColor = t.card),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (t.dark) 0.dp else 3.dp),
+        border = if (t.dark) BorderStroke(1.dp, t.hairline) else null
     ) {
-        Column(Modifier.padding(14.dp), content = content)
+        Column(Modifier.padding(16.dp), content = content)
     }
 }
 
@@ -125,10 +142,11 @@ fun SectionHeader(
             .fillMaxWidth()
             .padding(horizontal = 4.dp)
     ) {
+        val t = LocalTokens.current
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.headlineSmall, color = Navy)
+            Text(title, style = MaterialTheme.typography.headlineSmall, color = t.textPrimary)
             if (subtitle != null) {
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Muted)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = t.textSecondary)
             }
         }
         trailing()
@@ -136,26 +154,34 @@ fun SectionHeader(
 }
 
 @Composable
-fun Pill(text: String, bg: Color = SkySoft, fg: Color = Navy, modifier: Modifier = Modifier) {
+fun Pill(text: String, bg: Color? = null, fg: Color? = null, modifier: Modifier = Modifier) {
+    val t = LocalTokens.current
     Box(
         modifier
-            .background(bg, RoundedCornerShape(999.dp))
+            .background(bg ?: t.chip, RoundedCornerShape(999.dp))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
-        Text(text, style = MaterialTheme.typography.labelSmall, color = fg)
+        Text(text, style = MaterialTheme.typography.labelSmall, color = fg ?: t.chipText)
     }
 }
 
 @Composable
 fun StatTile(value: String, label: String, tint: Color = Blue, modifier: Modifier = Modifier) {
+    val t = LocalTokens.current
     Column(
         modifier
-            .background(tint.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
+            .background(tint.copy(alpha = if (t.dark) 0.20f else 0.12f), RoundedCornerShape(14.dp))
             .padding(horizontal = 14.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(value, style = MaterialTheme.typography.headlineSmall, color = tint)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Muted)
+        Text(
+            value,
+            style = MaterialTheme.typography.headlineSmall,
+            color = tint,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(label, style = MaterialTheme.typography.labelSmall, color = t.textSecondary)
     }
 }
 
@@ -168,18 +194,27 @@ fun PrimaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    val t = LocalTokens.current
+    val shape = RoundedCornerShape(t.radiusControl.dp)
     Button(
         onClick = onClick,
-        modifier = modifier.height(46.dp),
+        // The gradient is painted onto the button's own bounds rather than a
+        // nested Box, because Material's containerColor only accepts a flat
+        // Color and a nested fillMaxWidth would have quietly forced every CTA
+        // to full width.
+        modifier = modifier
+            .height(48.dp)
+            .clip(shape)
+            .background(if (enabled) accentGradient(t) else SolidColor(t.cardSunken)),
         enabled = enabled,
-        shape = RoundedCornerShape(14.dp),
+        shape = shape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Amber,
-            contentColor = Navy,
-            disabledContainerColor = SkySoft,
-            disabledContentColor = Muted
+            containerColor = Color.Transparent,
+            contentColor = t.onAccent,
+            disabledContainerColor = Color.Transparent,
+            disabledContentColor = t.textTertiary
         ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp, pressedElevation = 6.dp)
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 0.dp)
     ) {
         Text(text, style = MaterialTheme.typography.labelLarge)
     }
@@ -194,7 +229,7 @@ fun SecondaryButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(46.dp),
+        modifier = modifier.height(48.dp),
         enabled = enabled,
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
@@ -280,27 +315,28 @@ fun CheckRow(
             .clickable(onClick = onChecked)
             .padding(horizontal = 2.dp, vertical = 6.dp)
     ) {
+        val t = LocalTokens.current
         Box(
             Modifier
-                .size(22.dp)
-                .background(if (checked) tint else Color.Transparent, RoundedCornerShape(7.dp))
-                .border(2.dp, if (checked) tint else SkySoft, RoundedCornerShape(7.dp)),
+                .size(23.dp)
+                .background(if (checked) tint else Color.Transparent, RoundedCornerShape(8.dp))
+                .border(2.dp, if (checked) tint else t.hairline, RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center
         ) {
             if (checked) {
                 Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
             }
         }
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = if (checked) Muted else Ink,
+                color = if (checked) t.textTertiary else t.textPrimary,
                 textDecoration = if (checked) TextDecoration.LineThrough else null
             )
             if (subtitle != null) {
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Muted)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = t.textSecondary)
             }
         }
         trailing?.invoke(this)
@@ -316,7 +352,7 @@ fun TassicProgress(percent: Float, color: Color = Blue, modifier: Modifier = Mod
             .height(8.dp)
             .clip(RoundedCornerShape(999.dp)),
         color = color,
-        trackColor = SkySoft
+        trackColor = LocalTokens.current.hairline
     )
 }
 
@@ -339,9 +375,12 @@ fun <T> SelectChips(
                 selected = opt == selected,
                 onClick = { onSelect(opt) },
                 label = { Text(label(opt)) },
+                shape = RoundedCornerShape(999.dp),
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Navy,
-                    selectedLabelColor = Color.White
+                    containerColor = LocalTokens.current.cardSunken,
+                    labelColor = LocalTokens.current.textSecondary,
+                    selectedContainerColor = LocalTokens.current.chrome,
+                    selectedLabelColor = LocalTokens.current.chromeText
                 )
             )
         }
@@ -528,7 +567,7 @@ fun ConfirmDelete(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = CardWhite,
+        containerColor = LocalTokens.current.card,
         title = { Text(title, style = MaterialTheme.typography.titleLarge) },
         text = { Text(message, style = MaterialTheme.typography.bodyMedium, color = Muted) },
         confirmButton = { DestructiveButton("Delete", { onConfirm(); onDismiss() }) },
@@ -545,19 +584,33 @@ fun EmptyState(
     actionText: String? = null,
     onAction: (() -> Unit)? = null
 ) {
+    val t = LocalTokens.current
     Column(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(SkySoft.copy(alpha = 0.55f))
-            .padding(vertical = 18.dp, horizontal = 18.dp),
+            .clip(RoundedCornerShape(t.radiusCard.dp))
+            .background(t.cardSunken)
+            .padding(vertical = 22.dp, horizontal = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(icon, contentDescription = null, tint = Blue, modifier = Modifier.size(28.dp))
-        Spacer(Modifier.height(8.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium, color = Navy)
+        Box(
+            Modifier
+                .size(46.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(t.accent.copy(alpha = if (t.dark) 0.20f else 0.16f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = t.accentDeep, modifier = Modifier.size(22.dp))
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(title, style = MaterialTheme.typography.titleMedium, color = t.textPrimary)
         Spacer(Modifier.height(4.dp))
-        Text(hint, style = MaterialTheme.typography.bodySmall, color = Muted)
+        Text(
+            hint,
+            style = MaterialTheme.typography.bodySmall,
+            color = t.textSecondary,
+            textAlign = TextAlign.Center
+        )
         if (actionText != null && onAction != null) {
             Spacer(Modifier.height(12.dp))
             GhostButton(actionText, onAction)

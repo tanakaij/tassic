@@ -1,7 +1,11 @@
 package tassic.ui.tabs
 
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,17 +28,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import tassic.data.Graph
+import tassic.data.Insights
 import tassic.data.PracticeKind
 import tassic.data.RecoveryHabit
 import tassic.data.T
 import tassic.data.TodoItem
 import tassic.data.WorkoutItem
 import tassic.ui.Tab
+import tassic.ui.components.AnimatedNumber
 import tassic.ui.components.CheckRow
 import tassic.ui.components.DestructiveButton
 import tassic.ui.components.EmptyState
@@ -44,7 +52,11 @@ import tassic.ui.components.ItemMenu
 import tassic.ui.components.Pill
 import tassic.ui.components.rememberState
 import tassic.ui.components.SectionHeader
+import tassic.ui.components.SegmentedControl
 import tassic.ui.components.SelectChips
+import tassic.ui.components.HeroCard
+import tassic.ui.components.ProgressRing
+import tassic.ui.components.Sparkline
 import tassic.ui.components.StatTile
 import tassic.ui.components.TabScaffold
 import tassic.ui.components.TassicCard
@@ -60,6 +72,7 @@ import tassic.ui.theme.Ink
 import tassic.ui.theme.Muted
 import tassic.ui.theme.Navy
 import tassic.ui.theme.Orange
+import tassic.ui.theme.LocalTokens
 import tassic.ui.theme.SkySoft
 
 @Composable
@@ -69,6 +82,7 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
     val todos by store.todos.items.collectAsState()
     val workouts by store.workouts.items.collectAsState()
     val habits by store.recovery.items.collectAsState()
+    val activity by store.activity.items.collectAsState()
     val today = T.today()
 
     var todoOpen by rememberState(false)
@@ -130,7 +144,96 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
             else -> null
         }
     ) {
-        SelectChips(views, view, label = { "$it (${viewCounts[it]})" }) { view = it }
+        // ---- Daily brief -------------------------------------------------
+        // The old Today tab opened straight into a checklist, which told you
+        // what was on the list but nothing about how the day or the week was
+        // actually going. This is the one card that answers that.
+        // Keyed on the tables it reads so it recomputes when data changes
+        // rather than on every recomposition — the engine walks the whole
+        // activity log, which is too much work to redo per frame.
+        val report = remember(todos, workouts, practice, habits, activity, today) {
+            Insights.report(store, today)
+        }
+        val tokens = LocalTokens.current
+        HeroCard {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "${Insights.greeting(T.localHour())}, here's your day",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = tokens.onAccent.copy(alpha = 0.7f)
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        report.headline,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = tokens.onAccent
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                ProgressRing(
+                    progress = report.momentum / 100f,
+                    diameter = 74,
+                    thickness = 8,
+                    color = tokens.onAccent,
+                    trackColor = tokens.onAccent.copy(alpha = 0.20f)
+                ) {
+                    AnimatedNumber(
+                        value = report.momentum,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = tokens.onAccent
+                    )
+                }
+            }
+
+            val top = report.nextActions.firstOrNull()
+            if (top != null) {
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                        .background(tokens.onAccent.copy(alpha = 0.12f))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "START WITH",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = tokens.onAccent.copy(alpha = 0.65f)
+                        )
+                        Text(
+                            top.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = tokens.onAccent
+                        )
+                        Text(
+                            top.reason,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = tokens.onAccent.copy(alpha = 0.75f)
+                        )
+                    }
+                    if (report.spark.size >= 4) {
+                        Box(Modifier.width(78.dp)) {
+                            Sparkline(
+                                values = report.spark.takeLast(14),
+                                height = 34,
+                                color = tokens.onAccent,
+                                showFill = false
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        SegmentedControl(
+            options = views,
+            selected = view,
+            badge = { viewCounts[it] },
+            onSelect = { view = it }
+        )
 
         // ---- Focus of the Day (CAGED) ------------------------------------
         if (view == "Practice") {
@@ -288,6 +391,10 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
                         t.dueEpochDay?.let { day ->
                             append("Due ${T.relativeDays(day, today)}")
                             t.dueTimeMinutes?.let { mins -> append(" · ${T.timeLabel(mins * 60_000L)}") }
+                        }
+                        if (t.recurrence.isNotBlank()) {
+                            if (isNotEmpty()) append(" · ")
+                            append(store.recurrenceLabel(t.recurrence))
                         }
                         if (t.tags.isNotEmpty()) {
                             if (isNotEmpty()) append(" · ")
