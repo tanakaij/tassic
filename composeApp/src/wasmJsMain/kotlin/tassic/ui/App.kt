@@ -314,7 +314,7 @@ private fun TassicBottomNav(current: Tab, onSelect: (Tab) -> Unit) {
         Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 14.dp, bottom = 12.dp)
+            .padding(start = 14.dp, end = 14.dp, bottom = 12.dp)
     ) {
         Row(
             Modifier
