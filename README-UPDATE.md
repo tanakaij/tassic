@@ -570,8 +570,26 @@ sufficient — none of it models Kotlin's overload resolution or its delegate
 conventions, which is precisely where these landed. The two new checks close the
 specific gaps that this build exposed. They will not be the last gaps.
 
-Worth running the build again: fixing 26 errors often reveals the next file the
-compiler never reached.
+### Build two: one error, and it was mine from build one
+
+`TodaySignals.kt:104 Syntax error: Expecting a top level declaration.`
+
+When my transformer mangled the `TodaySignals` declaration and I repaired it by
+hand, I fixed the brace and left the stray `)` behind — the function ended `})`
+instead of `}`. Everything after it was, as far as the compiler was concerned,
+inside an expression.
+
+My sweep had run clean over it, because in that last pass I was only counting
+braces. The earlier version of the checker counted parens too; I'd narrowed it
+while chasing the brace bug and never widened it again. A checker that gets
+quietly weaker between runs is worse than no checker, because it still reports
+"0 issues".
+
+The scanner is now one function, used everywhere, that tracks braces, parens
+*and* brackets, reports the line where any depth first goes negative, and
+additionally verifies that every top-level declaration actually begins at depth
+zero — which is the specific condition the compiler complained about, and would
+have caught this directly rather than by inference.
 
 ---
 
