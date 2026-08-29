@@ -90,7 +90,7 @@ fun SettingsTab() {
 
     TabScaffold(fabIcon = null, fabLabel = null, onFab = null) {
         SegmentedControl(
-            options = listOf("Reminders", "Companion", "Privacy", "Modules", "Appearance", "Data", "Diagnostics"),
+            options = listOf("Reminders", "Appearance", "Companion", "Modules", "Privacy", "Data", "Diagnostics"),
             selected = view,
             onSelect = { view = it }
         )
@@ -996,43 +996,92 @@ private fun PrivacySection() {
 private fun ModulesSection() {
     val store = Graph.store
     val settings by store.settingsState.collectAsState()
+    val todos by store.todos.items.collectAsState()
     val t = LocalTokens.current
+    val feedback = rememberFeedback()
+
+    var confirmClear by rememberState<String?>(null)
 
     TassicCard {
         SectionTitle("Modules", "What Tassic keeps track of")
         Spacer(Modifier.height(8.dp))
         Text(
-            "Switching one off hides its section and keeps its rows off the day plan. Nothing is deleted, " +
-                "so turning it back on restores everything exactly as it was.",
+            "Switching one off hides its section and keeps its rows off the day plan. Nothing is deleted by the switch, " +
+                "so turning it back on restores everything exactly as it was — use Clear below if you actually want the data gone.",
             style = MaterialTheme.typography.bodyMedium,
             color = t.textSecondary
         )
     }
 
-    TassicCard {
-        MODULE_OPTIONS.forEachIndexed { index, option ->
-            val on = settings.hasModule(option.key)
+    MODULE_OPTIONS.forEach { option ->
+        val on = settings.hasModule(option.key)
+        val count = store.moduleItemCount(option.key)
+
+        TassicCard {
             ToggleRow(
                 option.title + if (option.required) " (core)" else "",
-                option.blurb,
+                option.blurb + if (count > 0) " · $count item(s)" else "",
                 on
             ) { checked ->
                 if (option.required) return@ToggleRow
                 store.updateSettings { s ->
                     val current = if (s.modules.isEmpty()) MODULE_OPTIONS.map { it.key } else s.modules
                     s.copy(
-                        modules = if (checked) {
-                            (current + option.key).distinct()
-                        } else {
-                            current - option.key
-                        }
+                        modules = if (checked) (current + option.key).distinct() else current - option.key
                     )
                 }
             }
-            if (index != MODULE_OPTIONS.lastIndex) SoftDivider()
+
+            // An enabled module with nothing in it is the state where people
+            // conclude a feature is broken, so the two ways out of it — take the
+            // starter set, or add your own — are offered right here rather than
+            // left to be discovered on the tab.
+            if (on) {
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (count == 0 && hasStarterSet(option.key)) {
+                        SecondaryButton("Add starter items", {
+                            val added = store.seedModule(option.key)
+                            feedback.say(
+                                if (added > 0) "$added item(s) added" else "Nothing to add"
+                            )
+                        })
+                    }
+                    if (count > 0) {
+                        GhostButton("Clear data", { confirmClear = option.key })
+                    }
+                }
+                if (count == 0 && !hasStarterSet(option.key)) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Empty — add your first entry from the ${option.title} section.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = t.textTertiary
+                    )
+                }
+            }
         }
     }
+
+    val clearing = confirmClear
+    if (clearing != null) {
+        val label = MODULE_OPTIONS.firstOrNull { it.key == clearing }?.title ?: clearing
+        ConfirmDelete(
+            title = "Clear $label?",
+            message = "${store.moduleItemCount(clearing)} row(s) will be deleted from this device. This cannot be undone — export a backup first if you might want them.",
+            onConfirm = {
+                val removed = store.clearModule(clearing)
+                feedback.say("$removed row(s) cleared")
+            },
+            onDismiss = { confirmClear = null }
+        )
+    }
 }
+
+/** Modules that ship an editable starter set; the rest begin genuinely empty. */
+private fun hasStarterSet(key: String): Boolean = key.uppercase() in setOf(
+    "TASKS", "GOALS", "HABITS", "GROWTH", "FITNESS", "CAREER", "WISHLIST", "RECOVERY", "MUSIC", "FAITH"
+)
 
 /**
  * Calendar subscriptions.

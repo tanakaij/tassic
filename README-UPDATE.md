@@ -1,4 +1,4 @@
-# Tassic v3.7 — everything from this session, in one drop
+# Tassic v3.9 — everything from this session, in one drop
 
 This archive contains **only the files that changed or are new**. Copy the
 `composeApp/` tree over your existing checkout, keeping the folder structure,
@@ -590,6 +590,94 @@ The scanner is now one function, used everywhere, that tracks braces, parens
 additionally verifies that every top-level declaration actually begins at depth
 zero — which is the specific condition the compiler complained about, and would
 have caught this directly rather than by inference.
+
+---
+
+## Part ten — four fixes from using it
+
+### The reading plan picker "did nothing"
+
+It wasn't broken — it just never showed you. `FaithTab` read
+`store.activeReadingPlan()` and `store.versesDue(today)` as plain calls rather
+than through `collectAsState`, so choosing a plan wrote the row correctly and
+Compose had no reason to re-render the screen. It only appeared after you left
+the tab and came back.
+
+Both now collect their tables. This is a class of bug worth naming: everything
+*written* works, so it survives every structural check I have, and it is
+invisible until someone actually taps the button.
+
+### Ambient background hadn't gone — it had gone off-screen
+
+Nothing moved it. Settings had three segments when I started and now has seven,
+and although the strip scrolls horizontally, Appearance had drifted to fifth
+place where nothing suggested it existed. Appearance is now second, which puts
+it on screen without scrolling.
+
+That's a real cost of the features added this session, and it's worth watching:
+a seven-item scrolling strip is close to the limit before Settings should become
+a plain vertical list.
+
+### Modules can now be filled and emptied
+
+Turning a module on previously revealed an empty tab and left you to work out
+where the "add" button was — which is exactly the state where people decide a
+feature is broken. Turning one off left its rows in storage invisibly, with no
+way to actually be rid of them.
+
+Each module now shows its row count, and while enabled offers:
+
+- **Add starter items** — the same editable seed set a fresh install gets, and
+  only ever into an empty table, so it can't overwrite anything you've written.
+  That safety is why it's a button rather than a confirmation dialog.
+- **Clear data** — behind a confirmation naming the exact row count, because
+  this one genuinely is not undoable.
+
+Modules with no starter set say so plainly instead of offering a button that
+would do nothing.
+
+### The theme now reaches the chrome
+
+The bottom bar and drawer were fixed navy regardless of accent, so changing the
+theme visibly stopped at the edge of the content area. Both now take a low-alpha
+wash of the accent composited over the chrome base — 10% on the bar, 14% in the
+drawer's mid-ramp.
+
+**Visibility drove every number there.** The wash sits over a base that stays
+dark and a ramp that still ends near-black, so white-on-chrome contrast is
+essentially unchanged; the accent is legible as a tint and never as a background
+competing with the text. Alongside it, every hardcoded `Color.White` in the
+drawer and bottom bar — 18 of them — became `chromeText` at the same alpha, so
+if the chrome token is ever re-tuned for a theme, the text follows it instead of
+staying white against whatever it lands on.
+
+### Add person / Add someone did nothing
+
+Same root cause for both buttons, and it only affected people with an empty
+list — which is everyone opening the tab for the first time.
+
+`PeopleTab` had an early `return@TabScaffold` for the empty-list case, to skip
+the birthday and filter sections. The sheet host — `if (sheetOpen)
+PersonSheet(...)` — sat *below* that return. So on an empty list, tapping either
+button set the flag correctly and the composable that would have shown the sheet
+was never reached. With one person already added, both buttons worked fine.
+
+The host is now the first thing in the scaffold body, with a comment saying why
+it has to stay there.
+
+Two checks added, because this was invisible to everything I had:
+
+- **Sheet hosts stranded behind an early return** — scans each file for
+  `return@` inside a composable body and flags any sheet or dialog host after
+  it. Zero remaining.
+- **Orphan state flags** — any `var somethingOpen by rememberState` that gets
+  set to `true` must be read somewhere as a host condition, and must have a path
+  back to `false`. A flag with no host is a button that can never do anything.
+  Zero of either.
+
+These sit in the same category as the reading-plan bug: the logic was correct,
+the state was correct, and nothing rendered. Structural checks over syntax will
+never catch that class on their own.
 
 ---
 

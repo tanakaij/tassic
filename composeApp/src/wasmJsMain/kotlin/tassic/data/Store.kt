@@ -1159,6 +1159,101 @@ class Store() {
         activity.flow.value.filter { it.domain == "faith" && it.event == "PRAYER" && it.epochDay == day }
             .sumOf { it.value }
 
+    // ---- Modules --------------------------------------------------------------------------
+    //
+    // Switching a module on used to do nothing but reveal an empty tab, and
+    // switching one off left its rows sitting in storage invisibly. These make
+    // both directions concrete: turning one on can fill it with the same
+    // starter set a fresh install gets, and turning one off can take its data
+    // with it if that's what you actually meant.
+
+    /** How many rows a module owns right now — shown next to its toggle. */
+    fun moduleItemCount(key: String): Int = when (key.uppercase()) {
+        "TASKS" -> todos.flow.value.size
+        "GOALS" -> goals.flow.value.size
+        "HABITS" -> habits.flow.value.size
+        "JOURNAL" -> journal.flow.value.size
+        "PEOPLE" -> people.flow.value.size
+        "FITNESS" -> workouts.flow.value.size
+        "MUSIC" -> practice.flow.value.size + albums.flow.value.size
+        "FAITH" -> routines.flow.value.size + prayers.flow.value.size +
+            readingPlans.flow.value.size + verses.flow.value.size
+        "RECOVERY" -> recovery.flow.value.size
+        "CAREER" -> career.flow.value.size
+        "WISHLIST" -> wishlist.flow.value.size
+        "GROWTH" -> growth.flow.value.size + deeds.flow.value.size
+        else -> 0
+    }
+
+    /**
+     * Fills an empty module with its starter set.
+     *
+     * Only ever adds to an empty table — this can't overwrite anything you've
+     * written, which is what makes it safe to offer as a button rather than
+     * behind a confirmation.
+     */
+    fun seedModule(key: String): Int {
+        val before = moduleItemCount(key)
+        when (key.uppercase()) {
+            "TASKS" -> if (todos.flow.value.isEmpty()) { todos.flow.value = Seeds.todos(); persist(todos) }
+            "GOALS" -> if (goals.flow.value.isEmpty()) { goals.flow.value = Seeds.goals(); persist(goals) }
+            "HABITS" -> if (habits.flow.value.isEmpty()) { habits.flow.value = Seeds.habits(); persist(habits) }
+            "GROWTH" -> if (growth.flow.value.isEmpty()) { growth.flow.value = Seeds.growth(); persist(growth) }
+            "FITNESS" -> if (workouts.flow.value.isEmpty()) { workouts.flow.value = Seeds.workouts(); persist(workouts) }
+            "CAREER" -> if (career.flow.value.isEmpty()) { career.flow.value = Seeds.career(); persist(career) }
+            "WISHLIST" -> if (wishlist.flow.value.isEmpty()) { wishlist.flow.value = Seeds.wishlist(); persist(wishlist) }
+            "RECOVERY" -> if (recovery.flow.value.isEmpty()) { recovery.flow.value = Seeds.recovery(); persist(recovery) }
+            "MUSIC" -> {
+                if (practice.flow.value.isEmpty()) { practice.flow.value = Seeds.practice(); persist(practice) }
+                if (albums.flow.value.isEmpty()) { albums.flow.value = Seeds.albums(); persist(albums) }
+            }
+            "FAITH" -> {
+                if (routines.flow.value.isEmpty()) { routines.flow.value = Seeds.routines(); persist(routines) }
+                if (prayers.flow.value.isEmpty()) { prayers.flow.value = Seeds.prayers(); persist(prayers) }
+            }
+        }
+        return moduleItemCount(key) - before
+    }
+
+    /** Deletes everything a module owns. Caller must confirm — this is not undoable. */
+    fun clearModule(key: String): Int {
+        val removed = moduleItemCount(key)
+        when (key.uppercase()) {
+            "TASKS" -> { todos.flow.value = emptyList(); persist(todos) }
+            "GOALS" -> { goals.flow.value = emptyList(); persist(goals) }
+            "HABITS" -> { habits.flow.value = emptyList(); persist(habits) }
+            "JOURNAL" -> { journal.flow.value = emptyList(); persist(journal) }
+            "PEOPLE" -> { people.flow.value = emptyList(); persist(people) }
+            "FITNESS" -> {
+                workouts.flow.value = emptyList(); persist(workouts)
+                workoutLogs.flow.value = emptyList(); persist(workoutLogs)
+            }
+            "MUSIC" -> {
+                practice.flow.value = emptyList(); persist(practice)
+                albums.flow.value = emptyList(); persist(albums)
+            }
+            "FAITH" -> {
+                routines.flow.value = emptyList(); persist(routines)
+                prayers.flow.value = emptyList(); persist(prayers)
+                readingPlans.flow.value = emptyList(); persist(readingPlans)
+                verses.flow.value = emptyList(); persist(verses)
+                gratitude.flow.value = emptyList(); persist(gratitude)
+            }
+            "RECOVERY" -> {
+                recovery.flow.value = emptyList(); persist(recovery)
+                habitLogs.flow.value = emptyList(); persist(habitLogs)
+            }
+            "CAREER" -> { career.flow.value = emptyList(); persist(career) }
+            "WISHLIST" -> { wishlist.flow.value = emptyList(); persist(wishlist) }
+            "GROWTH" -> {
+                growth.flow.value = emptyList(); persist(growth)
+                growthCheckins.flow.value = emptyList(); persist(growthCheckins)
+                deeds.flow.value = emptyList(); persist(deeds)
+            }
+        }
+        return removed
+    }
+
     // ---- Meta / seeding ----------------------------------------------------------------------
 
     fun metaGet(key: String): String? = lsGet("tassic.meta.$key")

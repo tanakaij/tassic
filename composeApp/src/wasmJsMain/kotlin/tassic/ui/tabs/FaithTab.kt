@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -106,8 +107,13 @@ fun FaithTab() {
     val views = listOf("Reading", "Word", "Prayer", "Routines", "Reminders")
     if (view !in views) view = "Reading"
 
-    val plan = store.activeReadingPlan()
-    val versesDue = store.versesDue(today)
+    // These were plain store reads, so starting a plan wrote the row and the
+    // screen never re-rendered — the picker looked like it had done nothing.
+    // Collecting the tables is what makes the write visible.
+    val readingPlans by store.readingPlans.items.collectAsState()
+    val allVerses by store.verses.items.collectAsState()
+    val plan = remember(readingPlans) { store.activeReadingPlan() }
+    val versesDue = remember(allVerses, today) { store.versesDue(today) }
     val viewCounts = mapOf(
         "Reading" to (plan?.let { "${it.completedDays.size}/${it.days.size}" } ?: "—"),
         "Word" to if (versesDue.isEmpty()) null else "${versesDue.size}",
@@ -158,7 +164,7 @@ fun FaithTab() {
 
         // ---- Word (memorisation) --------------------------------------------
         if (view == "Word") {
-            val verses = store.verses.items.collectAsState().value
+            val verses = allVerses
             TassicCard {
                 SectionHeader(
                     "Hidden in the heart",

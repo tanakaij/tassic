@@ -79,6 +79,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -592,9 +593,17 @@ private fun TassicBottomNav(
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(26.dp))
+                // The bar was fixed navy regardless of the accent, so changing
+                // the theme visibly stopped at the edge of the content. It now
+                // takes a low-alpha wash of the accent over the chrome base —
+                // enough to read as themed, far too little to threaten the
+                // contrast that white-on-chrome depends on.
                 .background(
                     Brush.verticalGradient(
-                        listOf(t.chrome, t.chrome.copy(alpha = 0.94f))
+                        listOf(
+                            t.chrome,
+                            t.chrome.copy(alpha = 0.97f).compositeOver(t.accentDeep.copy(alpha = 0.10f))
+                        )
                     )
                 )
                 .padding(horizontal = 6.dp, vertical = 8.dp),
@@ -654,7 +663,7 @@ private fun RowScope.NavItem(
             Icon(
                 entry.icon,
                 contentDescription = entry.short,
-                tint = if (selected) t.onAccent else Color.White.copy(alpha = 0.62f),
+                tint = if (selected) t.onAccent else t.chromeText.copy(alpha = 0.62f),
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -662,7 +671,7 @@ private fun RowScope.NavItem(
         Text(
             entry.short,
             style = MaterialTheme.typography.labelSmall,
-            color = if (selected) Color.White else Color.White.copy(alpha = 0.55f),
+            color = if (selected) t.chromeText else t.chromeText.copy(alpha = 0.58f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -740,7 +749,7 @@ private fun TassicDrawerContent(
                     Box(
                         Modifier
                             .size(46.dp)
-                            .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
+                            .background(t.chromeText.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
                             .padding(5.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -748,11 +757,11 @@ private fun TassicDrawerContent(
                     }
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text("Tassic", style = MaterialTheme.typography.titleLarge, color = Color.White)
+                        Text("Tassic", style = MaterialTheme.typography.titleLarge, color = t.chromeText)
                         Text(
                             "Unified Life OS",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White.copy(alpha = 0.6f)
+                            color = t.chromeText.copy(alpha = 0.6f)
                         )
                     }
                 }
@@ -801,7 +810,7 @@ private fun TassicDrawerContent(
                         Text(
                             entry.group.uppercase(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.36f),
+                            color = t.chromeText.copy(alpha = 0.36f),
                             modifier = Modifier.padding(start = 26.dp, top = 12.dp, bottom = 4.dp)
                         )
                     }
@@ -828,7 +837,7 @@ private fun TassicDrawerContent(
                             Modifier
                                 .size(32.dp)
                                 .background(
-                                    if (selected) t.accent.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.08f),
+                                    if (selected) t.accent.copy(alpha = 0.9f) else t.chromeText.copy(alpha = 0.08f),
                                     RoundedCornerShape(10.dp)
                                 ),
                             contentAlignment = Alignment.Center
@@ -836,7 +845,7 @@ private fun TassicDrawerContent(
                             Icon(
                                 entry.icon,
                                 contentDescription = null,
-                                tint = if (selected) t.onAccent else Color.White.copy(alpha = 0.72f),
+                                tint = if (selected) t.onAccent else t.chromeText.copy(alpha = 0.72f),
                                 modifier = Modifier.size(17.dp)
                             )
                         }
@@ -848,7 +857,7 @@ private fun TassicDrawerContent(
                             } else {
                                 MaterialTheme.typography.bodyLarge
                             },
-                            color = if (selected) Color.White else Color.White.copy(alpha = 0.72f)
+                            color = if (selected) t.chromeText else t.chromeText.copy(alpha = 0.72f)
                         )
                         if (selected) {
                             Spacer(Modifier.weight(1f))
@@ -862,7 +871,7 @@ private fun TassicDrawerContent(
                 Text(
                     "Tassic \u00b7 v3.1",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.35f),
+                    color = t.chromeText.copy(alpha = 0.35f),
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)
                 )
             }
@@ -872,6 +881,7 @@ private fun TassicDrawerContent(
 
 @Composable
 private fun DrawerRule() {
+    val t = LocalTokens.current
     Box(
         Modifier
             .fillMaxWidth()
@@ -879,7 +889,7 @@ private fun DrawerRule() {
             .height(1.dp)
             .background(
                 Brush.horizontalGradient(
-                    listOf(Color.Transparent, Color.White.copy(alpha = 0.18f), Color.Transparent)
+                    listOf(Color.Transparent, t.chromeText.copy(alpha = 0.18f), Color.Transparent)
                 )
             )
     )
@@ -892,30 +902,32 @@ private fun DrawerAction(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val t = LocalTokens.current
     Column(
         modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White.copy(alpha = 0.09f))
+            .background(t.chromeText.copy(alpha = 0.09f))
             .pressable(onClick = onClick)
             .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(18.dp))
+        Icon(icon, contentDescription = label, tint = t.chromeText, modifier = Modifier.size(18.dp))
         Spacer(Modifier.height(5.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = t.chromeText.copy(alpha = 0.8f))
     }
 }
 
 @Composable
 private fun DrawerStat(value: String, label: String, tint: Color) {
+    val t = LocalTokens.current
     Column(
         Modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(Color.White.copy(alpha = 0.07f))
+            .background(t.chromeText.copy(alpha = 0.07f))
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Text(value, style = MaterialTheme.typography.titleMedium, color = tint)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.55f))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = t.chromeText.copy(alpha = 0.55f))
     }
 }
 
@@ -931,9 +943,16 @@ private fun DrawerBackdrop(modifier: Modifier = Modifier) {
         val h = size.height
         val diag = kotlin.math.hypot(w, h)
 
+        // Same reasoning as the bar: the drawer used a fixed navy ramp, so the
+        // accent picker had no effect on the largest surface in the app. The
+        // ramp still ends dark, which is what keeps the white text legible.
         drawRect(
             brush = Brush.linearGradient(
-                colors = listOf(t.chrome, NavySoft, Color(0xFF08192E)),
+                colors = listOf(
+                    t.chrome,
+                    NavySoft.compositeOver(t.accentDeep.copy(alpha = 0.14f)),
+                    Color(0xFF08192E)
+                ),
                 start = Offset(0f, 0f),
                 end = Offset(w, h)
             )

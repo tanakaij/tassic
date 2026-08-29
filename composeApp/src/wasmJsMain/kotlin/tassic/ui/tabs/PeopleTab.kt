@@ -96,6 +96,11 @@ fun PeopleTab() {
             fabLabel = "Add person",
             onFab = { editing = null; sheetOpen = true }
         ) {
+            // Hosted first, deliberately. There is an early return further down
+            // for the empty-list case, and a sheet hosted after it never
+            // composes for exactly the users who most need the Add button.
+            if (sheetOpen) PersonSheet(editing) { sheetOpen = false }
+
             InkCard {
                 Text("PEOPLE", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.55f))
                 Spacer(Modifier.height(4.dp))
@@ -217,7 +222,6 @@ fun PeopleTab() {
                 }
             }
 
-            if (sheetOpen) PersonSheet(editing) { sheetOpen = false }
         }
     }
 }
