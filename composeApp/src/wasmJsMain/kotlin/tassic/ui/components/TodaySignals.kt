@@ -101,7 +101,7 @@ fun TodaySignals(
             }
         }
     }
-}
+})
 
 private fun signalIcon(kind: String): ImageVector = when (kind) {
     "clock" -> Icons.Filled.Schedule

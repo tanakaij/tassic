@@ -125,11 +125,11 @@ fun ReadingPlanCard(plan: ReadingPlan, onPick: () -> Unit) {
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             if (reference.isNotBlank()) {
-                PrimaryButton(if (doneToday) "Read \u2713" else "Mark read") {
+                PrimaryButton(if (doneToday) "Read \u2713" else "Mark read", {
                     store.toggleReadingDay(plan, dayIndex)
                     if (!doneToday) feedback.confirm("Day ${dayIndex + 1} marked")
-                }
-                GhostButton("Open passage") { openUrl(Bible.readerUrl(reference)) }
+                })
+                GhostButton("Open passage", { openUrl(Bible.readerUrl(reference)) })
             }
             GhostButton("Change plan", onPick)
         }
@@ -345,17 +345,17 @@ fun VerseReviewSheet(onDismiss: () -> Unit) {
             Text("Did you have it?", style = MaterialTheme.typography.bodyMedium, color = t.textSecondary)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                GhostButton("Not yet") {
+                GhostButton("Not yet", {
                     store.reviewVerse(verse, remembered = false)
                     revealed = false
                     index += 1
-                }
-                PrimaryButton("Had it") {
+                })
+                PrimaryButton("Had it", {
                     store.reviewVerse(verse, remembered = true)
                     vibrate(10)
                     revealed = false
                     index += 1
-                }
+                })
             }
             Spacer(Modifier.height(8.dp))
             Text(
@@ -371,7 +371,7 @@ fun VerseReviewSheet(onDismiss: () -> Unit) {
                     color = t.textSecondary
                 )
                 Spacer(Modifier.height(14.dp))
-                SecondaryButton("Show the verse") { revealed = true }
+                SecondaryButton("Show the verse", { revealed = true })
             }
         }
     }
@@ -437,10 +437,10 @@ fun GratitudeCard() {
             Spacer(Modifier.height(6.dp))
             LabeledField(draft, { draft = it }, "Something you're grateful for", placeholder = "Small and specific")
             Spacer(Modifier.height(8.dp))
-            SecondaryButton("Add") {
+            SecondaryButton("Add", {
                 store.addGratitude(draft)
                 draft = ""
-            }
+            })
         } else {
             Spacer(Modifier.height(6.dp))
             Text(
@@ -521,11 +521,11 @@ fun PrayerSessionSheet(onDismiss: () -> Unit) {
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(16.dp))
-                PrimaryButton("Done") {
+                PrimaryButton("Done", {
                     store.logPrayerSession(total)
                     feedback.confirm("$total minutes logged")
                     onDismiss()
-                }
+                })
             }
             return@TassicSheet
         }
@@ -606,16 +606,16 @@ fun PrayerSessionSheet(onDismiss: () -> Unit) {
 
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GhostButton(if (running) "Pause" else "Resume") { running = !running }
+            GhostButton(if (running) "Pause" else "Resume", { running = !running })
             if (stage < movements.lastIndex) {
-                GhostButton("Next") { stage += 1; elapsed = 0 }
+                GhostButton("Next", { stage += 1; elapsed = 0 })
             }
-            GhostButton("End and log") {
+            GhostButton("End and log", {
                 val minutes = (movements.take(stage).sumOf { it.minutes } + elapsed / 60).coerceAtLeast(0)
                 store.logPrayerSession(minutes)
                 feedback.confirm(if (minutes > 0) "$minutes minutes logged" else "Ended")
                 onDismiss()
-            }
+            })
         }
     }
 }

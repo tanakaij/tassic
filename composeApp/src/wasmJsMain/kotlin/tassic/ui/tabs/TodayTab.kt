@@ -267,9 +267,9 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
         val signals = remember(todos, habits, activity, practice, workouts, today) {
             Coach.signals(store, today)
         }
-        TodaySignals(signals) { name ->
+        TodaySignals(signals, { name ->
             Tab.entries.firstOrNull { it.name == name }?.let(onOpenTab)
-        }
+        })
 
         SegmentedControl(
             options = views,

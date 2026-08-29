@@ -1,4 +1,4 @@
-# Tassic v3.6 — everything from this session, in one drop
+# Tassic v3.7 — everything from this session, in one drop
 
 This archive contains **only the files that changed or are new**. Copy the
 `composeApp/` tree over your existing checkout, keeping the folder structure,
@@ -509,6 +509,69 @@ below answer *what do I do*. Three questions, three sizes, in that order.
 
 Plan keeps its Day view. The two screens now have genuinely distinct jobs —
 Today is status, Plan is schedule — rather than competing for the same one.
+
+---
+
+## Part nine — the first real build
+
+You compiled it. It failed, with 26 errors across three files and exactly three
+root causes. All are fixed, and more usefully, all three were things my
+inspection sweep structurally could not have caught — so the sweep grew two new
+checks.
+
+### 1. Trailing lambdas bound to the wrong parameter (FaithUi, TodaySignals)
+
+`PrimaryButton`, `SecondaryButton`, `GhostButton` and `DestructiveButton` all
+take `onClick` as their **second** parameter, not their last:
+
+```kotlin
+fun GhostButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
+                trailingIcon: ImageVector? = null)
+```
+
+So `GhostButton("Pause") { ... }` doesn't pass a click handler at all — the
+lambda binds to `trailingIcon`, and `onClick` goes missing. Kotlin reports this
+as two confusing errors per site ("no value passed for onClick" plus a type
+mismatch against `ImageVector?` or `Boolean`), which is why one mistake produced
+twenty-odd lines of log.
+
+I'd used the correct positional form everywhere else all session and slipped
+into the trailing-lambda habit in FaithUi. Twelve call sites fixed. The
+transformer I wrote to fix them initially mangled the `TodaySignals` *function
+declaration* by matching `fun TodaySignals(...) {` as if it were a call — caught
+and repaired, and worth recording as the sort of thing automated rewriting does
+when you let it near a whole tree.
+
+**New check:** the sweep now parses every function signature in both trees,
+works out whether the last parameter is a function type, and flags any call site
+using a trailing lambda where it isn't. Zero remaining.
+
+### 2. A missing delegate import (HabitUi)
+
+`var name by rememberState(...)` needs `import androidx.compose.runtime.setValue`
+to be in scope. `HabitUi.kt` imported `getValue` and not `setValue`, so all
+eleven properties in the habit editor failed with "Property delegate must have a
+`setValue` method" — an error message that names the missing import nowhere.
+
+**New check:** any file containing `var x by` must import `setValue`; any file
+with `by` at all must import `getValue`. Swept across all 44 files; this was the
+only one.
+
+### 3. `TodaySignals(signals) { ... }` (TodayTab)
+
+Same root cause as (1) — `onOpenTab` is second, `modifier` is last — in code I'd
+written twenty minutes before the build.
+
+### What this changes about the previous claims
+
+Every "verified" I reported this session was structural: braces, imports, symbol
+resolution, navigation targets, arithmetic. That was real and it was not
+sufficient — none of it models Kotlin's overload resolution or its delegate
+conventions, which is precisely where these landed. The two new checks close the
+specific gaps that this build exposed. They will not be the last gaps.
+
+Worth running the build again: fixing 26 errors often reveals the next file the
+compiler never reached.
 
 ---
 
