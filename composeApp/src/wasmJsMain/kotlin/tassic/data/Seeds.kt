@@ -192,6 +192,77 @@ object Seeds {
         PrayerPoint(id = 1, title = "Provision for the family", details = "Trust for daily bread and open doors.", category = "Family", createdAt = ts())
     )
 
+    /**
+     * Starter habits. Chosen to demonstrate each cadence the tracker supports —
+     * a plain daily tick, a counted target, a weekday-only habit and a
+     * "three times a week" one — so the shape of the feature is visible before
+     * the user has entered anything of their own.
+     */
+    fun habits(): List<Habit> {
+        val now = ts()
+        return listOf(
+            Habit(
+                id = 1, name = "Read 20 minutes", icon = "book", color = "violet",
+                cadence = "DAILY", targetPerDay = 1, timeOfDay = "EVENING",
+                sortOrder = 0, createdAt = now
+            ),
+            Habit(
+                id = 2, name = "Drink water", icon = "water", color = "blue",
+                cadence = "DAILY", targetPerDay = 8, unit = "glasses",
+                sortOrder = 1, createdAt = now
+            ),
+            Habit(
+                id = 3, name = "Morning stretch", icon = "sun", color = "amber",
+                cadence = "WEEKDAYS", targetPerDay = 1, timeOfDay = "MORNING",
+                sortOrder = 2, createdAt = now
+            ),
+            Habit(
+                id = 4, name = "Practice sight-reading", icon = "music", color = "green",
+                cadence = "WEEKLY_COUNT", timesPerWeek = 3, targetPerDay = 1,
+                sortOrder = 3, createdAt = now
+            )
+        )
+    }
+
+    /**
+     * Starter growth areas.
+     *
+     * One per dimension would be overwhelming, so this seeds four — the ones
+     * most people would actually name if asked what they'd like to be better
+     * at — with the intention left blank on purpose. A pre-written intention
+     * would be the app deciding who someone is trying to become, which is the
+     * one thing here it has no business doing.
+     */
+    fun growth(): List<GrowthArea> {
+        val now = ts()
+        return listOf(
+            GrowthArea(
+                id = 1, name = "Patience under pressure", dimension = "CHARACTER",
+                practices = listOf("Pause before answering when irritated", "Name the feeling before acting on it"),
+                evidence = "Fewer sharp replies I'd take back.",
+                sortOrder = 0, createdAt = now
+            ),
+            GrowthArea(
+                id = 2, name = "Present with the people in front of me", dimension = "RELATIONSHIPS",
+                practices = listOf("Phone face-down at meals", "Ask a second question before talking about myself"),
+                evidence = "People finish their sentences with me.",
+                sortOrder = 1, createdAt = now
+            ),
+            GrowthArea(
+                id = 3, name = "Honest with myself", dimension = "SPIRIT",
+                practices = listOf("Write the thing I'm avoiding", "Say the harder true version out loud"),
+                evidence = "Less gap between what I know and what I admit.",
+                sortOrder = 2, createdAt = now
+            ),
+            GrowthArea(
+                id = 4, name = "Generous without being asked", dimension = "SERVICE",
+                practices = listOf("Notice one need a month and meet it quietly"),
+                evidence = "Giving that costs me something.",
+                sortOrder = 3, createdAt = now
+            )
+        )
+    }
+
     fun wishlist(): List<WishItem> {
         val now = ts()
         return listOf(

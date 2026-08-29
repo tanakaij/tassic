@@ -45,21 +45,23 @@ import tassic.ui.components.GhostButton
 import tassic.ui.components.IconActionBtn
 import tassic.ui.components.ItemMenu
 import tassic.ui.components.JournalComposerSheet
+import tassic.ui.components.LockGate
 import tassic.ui.components.Pill
 import tassic.ui.components.SegmentedControl
 import tassic.ui.components.SelectChips
 import tassic.ui.components.StatTile
+import tassic.ui.components.StoredImage
 import tassic.ui.components.rememberSheetScope
 import tassic.ui.components.rememberState
 import tassic.ui.components.SectionHeader
 import tassic.ui.components.TabScaffold
 import tassic.ui.components.TassicCard
+import tassic.ui.theme.surfaceSoft
+import tassic.ui.theme.textMuted
+import tassic.ui.theme.textInk
 import tassic.ui.theme.Coral
 import tassic.ui.theme.Green
-import tassic.ui.theme.Ink
 import tassic.ui.theme.MoodColors
-import tassic.ui.theme.Muted
-import tassic.ui.theme.Navy
 
 @Composable
 fun JournalTab() {
@@ -92,24 +94,34 @@ fun JournalTab() {
         val showRecovery = hasRecovery && view == "Recovery"
 
         // ---- Recovery history ------------------------------------------------
+        //
+        // Relapse logs are the single most sensitive thing the app holds, so
+        // this section sits behind the PIN independently of the journal — some
+        // people want the writing open and this closed.
         if (showRecovery) {
-            SectionHeader("Recovery History", "Streaks & trigger reflections")
-            habits.forEach { h ->
-                RecoveryHistoryCard(
-                    h,
-                    habitLogs.filter { it.habitId == h.id && it.event == "RELAPSE" }.sortedByDescending { it.loggedAt }
-                )
+            LockGate("RECOVERY") {
+                Column {
+                    SectionHeader("Recovery History", "Streaks & trigger reflections")
+                    habits.forEach { h ->
+                        RecoveryHistoryCard(
+                            h,
+                            habitLogs.filter { it.habitId == h.id && it.event == "RELAPSE" }
+                                .sortedByDescending { it.loggedAt }
+                        )
+                    }
+                }
             }
         }
 
         // ---- Entries -----------------------------------------------------------
         if (showJournal) {
         SectionHeader("Journal", "${entries.size} multimodal entries")
-        SegmentedControl(listOf("All", "Voice", "Text"), filter) { filter = it }
+        SegmentedControl(listOf("All", "Voice", "Photo", "Text"), filter) { filter = it }
         val filtered = entries.filter {
             when (filter) {
                 "Voice" -> it.audioId != null
-                "Text" -> it.audioId == null
+                "Photo" -> it.imageId != null
+                "Text" -> it.audioId == null && it.imageId == null
                 else -> true
             }
         }
@@ -141,8 +153,8 @@ private fun RecoveryHistoryCard(habit: RecoveryHabit, logs: List<HabitLog>) {
     TassicCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(habit.name, style = MaterialTheme.typography.titleMedium, color = Navy)
-                Text("Started ${T.dateLabel(habit.startEpochDay)}", style = MaterialTheme.typography.bodySmall, color = Muted)
+                Text(habit.name, style = MaterialTheme.typography.titleMedium, color = textInk)
+                Text("Started ${T.dateLabel(habit.startEpochDay)}", style = MaterialTheme.typography.bodySmall, color = textMuted)
             }
             StatTile("${Graph.store.daysClean(habit)}", "clean", Green)
             Spacer(Modifier.width(8.dp))
@@ -153,7 +165,7 @@ private fun RecoveryHistoryCard(habit: RecoveryHabit, logs: List<HabitLog>) {
         Text(
             "Trigger Log",
             style = MaterialTheme.typography.titleSmall,
-            color = Ink,
+            color = textInk,
             modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
         )
         if (logs.isEmpty()) {
@@ -171,7 +183,7 @@ private fun RecoveryHistoryCard(habit: RecoveryHabit, logs: List<HabitLog>) {
                     Spacer(Modifier.width(8.dp))
                     Column {
                         Text(T.fullLabel(log.loggedAt), style = MaterialTheme.typography.labelSmall, color = Coral)
-                        Text(log.triggerNote, style = MaterialTheme.typography.bodySmall, color = Muted)
+                        Text(log.triggerNote, style = MaterialTheme.typography.bodySmall, color = textMuted)
                     }
                 }
             }
@@ -199,9 +211,9 @@ private fun EntryCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         if (entry.title.isNotBlank()) {
-                            Text(entry.title, style = MaterialTheme.typography.titleLarge, color = Ink)
+                            Text(entry.title, style = MaterialTheme.typography.titleLarge, color = textInk)
                         }
-                        Text(T.fullLabel(entry.createdAt), style = MaterialTheme.typography.labelSmall, color = Muted)
+                        Text(T.fullLabel(entry.createdAt), style = MaterialTheme.typography.labelSmall, color = textMuted)
                     }
                     var menu by rememberState(false)
                     IconActionBtn(Icons.Filled.MoreVert, "Options") { menu = true }
@@ -211,6 +223,10 @@ private fun EntryCard(
                         onEdit = onEdit,
                         onDelete = onDelete
                     )
+                }
+                entry.imageId?.let { id ->
+                    Spacer(Modifier.height(8.dp))
+                    StoredImage(id, height = 160)
                 }
                 if (entry.body.isNotBlank()) {
                     RichBody(entry.body, modifier = Modifier.padding(top = 6.dp))
@@ -229,7 +245,7 @@ private fun EntryCard(
                             }
                         })
                     }
-                    entry.tags.forEach { tag -> Pill(tag, bg = tassic.ui.theme.SkySoft) }
+                    entry.tags.forEach { tag -> Pill(tag, bg = surfaceSoft) }
                 }
             }
         }
@@ -245,7 +261,7 @@ private fun RichBody(body: String, modifier: Modifier = Modifier) {
                 line.startsWith("# ") -> Text(
                     line.removePrefix("# "),
                     style = MaterialTheme.typography.titleMedium,
-                    color = Navy,
+                    color = textInk,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -258,15 +274,15 @@ private fun RichBody(body: String, modifier: Modifier = Modifier) {
                             .padding(top = 8.dp, end = 8.dp)
                             .size(5.dp)
                             .clip(CircleShape)
-                            .background(Muted)
+                            .background(textMuted)
                     )
                     Text(
                         line.removePrefix("- "),
-                        style = MaterialTheme.typography.bodyMedium, color = Ink
+                        style = MaterialTheme.typography.bodyMedium, color = textInk
                     )
                 }
                 line.isBlank() -> Spacer(Modifier.height(4.dp))
-                else -> Text(line, style = MaterialTheme.typography.bodyMedium, color = Ink)
+                else -> Text(line, style = MaterialTheme.typography.bodyMedium, color = textInk)
             }
         }
     }

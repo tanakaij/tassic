@@ -16,6 +16,16 @@ kotlin {
             commonWebpackConfig {
                 outputFileName = "composeApp.js"
             }
+            // Tests run in headless Chrome. The pure logic under test —
+            // the capture parser, the ICS reader, habit streaks, day
+            // planning — has no UI, but it does read the device clock and
+            // localStorage through the js() bridge, so it needs a real
+            // browser rather than a JVM harness.
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                }
+            }
         }
         binaries.executable()
     }
@@ -38,6 +48,16 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.browser)
+        }
+
+        // The analytics and parsing layers are pure functions over plain data,
+        // which makes them both cheap to test and expensive to get subtly
+        // wrong — exactly the combination that earns a test source set. The
+        // capture parser shipped with a real bug (punctuation stripping ate
+        // the "!" off "!high", silently disabling the whole priority grammar)
+        // that a single assertion would have caught.
+        wasmJsTest.dependencies {
+            implementation(kotlin("test"))
         }
     }
 }

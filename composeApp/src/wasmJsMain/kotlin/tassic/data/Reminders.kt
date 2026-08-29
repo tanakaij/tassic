@@ -108,6 +108,47 @@ object Reminders {
             shown++
         }
 
+        // ---- Habits ------------------------------------------------------------
+        // Habits shipped with a reminder switch and reminder hour that nothing
+        // ever read, so setting one produced an alert that could never arrive.
+        // A control that silently does nothing is worse than no control.
+        store.activeHabits().forEach { h ->
+            if (!h.reminderOn) return@forEach
+            if (hour < h.reminderHour) return@forEach
+            if (!store.habitDueOn(h, today)) return@forEach
+            if (store.habitDoneOn(h, today)) return@forEach
+            val key = "notified.habit.${h.id}.$today"
+            if (store.metaGet(key) != null) return@forEach
+            if (settings.isQuiet(hour)) return@forEach
+
+            val streak = store.habitStreak(h, today)
+            val body = when {
+                streak >= 3 -> "$streak-day run still open."
+                h.targetPerDay > 1 ->
+                    "${store.habitCount(h.id, today)} of ${h.targetPerDay} ${h.unit}".trim() + " so far."
+                else -> Agenda.habitCadenceLabel(h) + " \u00b7 not yet today."
+            }
+            Notifications.showRoutine(h.name, body, h.id)
+            store.metaSet(key, "1")
+            shown++
+        }
+
+        // ---- Memory verses -------------------------------------------------------
+        // Batched into one notification rather than one per verse: five
+        // separate alerts for five due cards is how people turn reminders off.
+        if (settings.remindersOn && !settings.isQuiet(hour) && hour >= settings.dailyBriefHour) {
+            val due = store.versesDue(today)
+            val key = "notified.verses.$today"
+            if (due.isNotEmpty() && store.metaGet(key) == null) {
+                Notifications.show(
+                    "${due.size} verse${plural(due.size)} to review",
+                    due.take(3).joinToString(", ") { it.reference }
+                )
+                store.metaSet(key, "1")
+                shown++
+            }
+        }
+
         // ---- Daily brief -------------------------------------------------------
         if (settings.dailyBriefOn && !settings.isQuiet(hour)) {
             val fireAt = today * T.DAY_MS + settings.dailyBriefHour * 3_600_000L
@@ -172,8 +213,19 @@ object Reminders {
         val trained = store.workoutLogs.items.value.any { T.dayOf(it.loggedAt) == today }
         val routines = store.routines.items.value.count { store.routineDueToday(it, today) }
 
+        val habitsOpen = store.habitsDueToday(today).count { !store.habitDoneOn(it, today) }
+        val bestHabitRun = store.activeHabits()
+            .filter { !store.habitDoneOn(it, today) && store.habitDueOn(it, today) }
+            .maxOfOrNull { store.habitStreak(it, today) } ?: 0
+
         return when {
+            // A streak about to break is the most actionable thing there is at
+            // this hour, so it outranks a plain count of open items.
+            bestHabitRun >= 3 -> "A $bestHabitRun-day habit run ends at midnight."
             streak >= 2 && !trained -> "Your $streak-day training streak ends at midnight."
+            habitsOpen > 0 && openToday > 0 ->
+                "$openToday task${plural(openToday)} and $habitsOpen habit${plural(habitsOpen)} still open."
+            habitsOpen > 0 -> "$habitsOpen habit${plural(habitsOpen)} still open today."
             openToday > 0 && routines > 0 ->
                 "$openToday task${plural(openToday)} and $routines rhythm${plural(routines)} still open."
             openToday > 0 -> "$openToday task${plural(openToday)} still open today."
@@ -198,7 +250,8 @@ object Reminders {
         val today = T.today()
         val count = store.todos.items.value.count {
             !it.done && (it.dueEpochDay ?: Long.MAX_VALUE) <= today
-        } + store.routines.items.value.count { store.routineDueToday(it, today) }
+        } + store.routines.items.value.count { store.routineDueToday(it, today) } +
+            store.habitsDueToday(today).count { !store.habitDoneOn(it, today) }
         Badge.set(count)
     }
 
@@ -214,7 +267,7 @@ object Reminders {
     }
 
     private fun pruneMetaKeys(store: Store, today: Long) {
-        listOf("brief", "evening").forEach { kind ->
+        listOf("brief", "evening", "verses").forEach { kind ->
             for (back in 8..30) {
                 store.metaClear("notified.$kind.${today - back}")
             }
@@ -222,6 +275,11 @@ object Reminders {
         store.routines.items.value.forEach { r ->
             for (back in 8..30) {
                 store.metaClear("notified.routine.${r.id}.${today - back}")
+            }
+        }
+        store.habits.items.value.forEach { h ->
+            for (back in 8..30) {
+                store.metaClear("notified.habit.${h.id}.${today - back}")
             }
         }
     }

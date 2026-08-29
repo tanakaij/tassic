@@ -36,6 +36,7 @@ import tassic.data.T
 import tassic.data.WishItem
 import tassic.platform.AudioRecorder
 import tassic.platform.AudioStore
+import tassic.platform.MediaStore
 import tassic.platform.awaitOrNull
 import tassic.ui.theme.Coral
 import tassic.ui.theme.Green
@@ -229,6 +230,8 @@ fun JournalComposerSheet(
         }.joinToString(", ")
     )
     var audioId by rememberState(edit?.audioId)
+    var imageId by rememberState(edit?.imageId)
+    var attaching by rememberState(false)
     var pendingUrl by rememberState<String?>(null)
     var recording by rememberState(false)
     var seconds by rememberState(0)
@@ -294,6 +297,42 @@ fun JournalComposerSheet(
         pendingUrl = null
     }
 
+    // Photos go through the same downscale-then-IndexedDB path as voice notes.
+    // A full-resolution phone photo is several megabytes; thirty of them would
+    // put the origin over quota and start getting evicted, taking the clips
+    // with them. MediaStore caps the long edge before anything is stored.
+    val attachPhoto: () -> Unit = {
+        if (!attaching) {
+            attaching = true
+            cs.launch {
+                val dataUrl = MediaStore.pickImage().awaitOrNull()?.toString()
+                if (dataUrl == null) {
+                    attaching = false
+                    return@launch
+                }
+                val id = "img_${T.now()}"
+                val saved = try {
+                    MediaStore.put(id, dataUrl).await<JsAny?>()
+                    true
+                } catch (e: Throwable) {
+                    false
+                }
+                attaching = false
+                if (saved) {
+                    imageId?.let { MediaStore.delete(it) }
+                    imageId = id
+                } else {
+                    feedback.launchSnackbar("Could not store that photo")
+                }
+            }
+        }
+    }
+
+    val removePhoto: () -> Unit = {
+        imageId?.let { MediaStore.delete(it) }
+        imageId = null
+    }
+
     // Recording timer; auto-stop at 3 minutes to respect storage quotas.
     androidx.compose.runtime.LaunchedEffect(recording) {
         var t = 0
@@ -325,6 +364,14 @@ fun JournalComposerSheet(
             onRemove = removeClip
         )
 
+        FieldLabel("Photo")
+        PhotoBlock(
+            imageId = imageId,
+            busy = attaching,
+            onAttach = attachPhoto,
+            onRemove = removePhoto
+        )
+
         SheetActions(
             onSave = {
                 val item = (edit ?: JournalEntry(createdAt = T.now())).copy(
@@ -332,10 +379,11 @@ fun JournalComposerSheet(
                     body = body,
                     mood = mood,
                     audioId = audioId,
+                    imageId = imageId,
                     tags = tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                 )
                 if (edit == null) store.addJournal(item)
-                else store.updateJournal(item, previousAudioId = edit.audioId)
+                else store.updateJournal(item, previousAudioId = edit.audioId, previousImageId = edit.imageId)
                 onDismiss()
             },
             onCancel = onDismiss,
@@ -385,6 +433,39 @@ private fun VoiceRecorderBlock(
                 GhostButton("Remove", onRemove)
             }
             else -> SecondaryButton("Record voice note", onStart)
+        }
+    }
+}
+
+/**
+ * Photo attachment.
+ *
+ * One photo per entry on purpose: a journal is writing with an image beside it,
+ * not a gallery, and a single slot keeps the storage story simple enough to
+ * reason about — one key, one blob, deleted with the entry.
+ */
+@Composable
+private fun PhotoBlock(
+    imageId: String?,
+    busy: Boolean,
+    onAttach: () -> Unit,
+    onRemove: () -> Unit
+) {
+    Column {
+        if (imageId != null) {
+            StoredImage(imageId, height = 170)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                GhostButton("Replace", onAttach)
+                GhostButton("Remove", onRemove)
+            }
+        } else {
+            SecondaryButton(if (busy) "Opening…" else "Add a photo", onAttach)
+            Text(
+                "Resized to 1600px and stored on this device only.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Muted,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }

@@ -13,5 +13,11 @@
     "doneToday": 0,
     "overdue": 0,
     "badge": 0,
-    "progressLabel": ""
+    "progressLabel": "",
+    "habitsLabel": "0/0",
+    "habitsDue": 0,
+    "habitsKept": 0,
+    "readingToday": "No plan",
+    "versesDue": 0,
+    "deedThisMonth": "Nothing yet"
 }

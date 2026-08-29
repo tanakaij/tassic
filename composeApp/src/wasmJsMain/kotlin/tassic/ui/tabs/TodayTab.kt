@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.Icon
@@ -34,7 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import tassic.data.Coach
 import tassic.data.Graph
+import tassic.data.Habit
 import tassic.data.Insights
 import tassic.data.PracticeKind
 import tassic.data.RecoveryHabit
@@ -49,6 +52,7 @@ import tassic.ui.components.EmptyState
 import tassic.ui.components.GhostButton
 import tassic.ui.components.IconActionBtn
 import tassic.ui.components.ItemMenu
+import tassic.ui.components.LockGate
 import tassic.ui.components.Pill
 import tassic.ui.components.rememberState
 import tassic.ui.components.SectionHeader
@@ -63,17 +67,19 @@ import tassic.ui.components.TassicCard
 import tassic.ui.components.TodoSheet
 import tassic.ui.components.WorkoutSheet
 import tassic.ui.components.HabitSheet
+import tassic.ui.components.HabitEditorSheet
+import tassic.ui.components.HabitRow
+import tassic.ui.components.TodaySignals
 import tassic.ui.components.RelapseSheet
 import tassic.ui.components.ShapeSheet
+import tassic.ui.theme.surfaceSoft
+import tassic.ui.theme.textMuted
+import tassic.ui.theme.textInk
 import tassic.ui.theme.AmberDeep
 import tassic.ui.theme.Blue
 import tassic.ui.theme.Green
-import tassic.ui.theme.Ink
-import tassic.ui.theme.Muted
-import tassic.ui.theme.Navy
 import tassic.ui.theme.Orange
 import tassic.ui.theme.LocalTokens
-import tassic.ui.theme.SkySoft
 
 @Composable
 fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
@@ -92,6 +98,8 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
     var habitOpen by rememberState(false)
     var habitEdit by rememberState<RecoveryHabit?>(null)
     var relapseFor by rememberState<RecoveryHabit?>(null)
+    var trackerOpen by rememberState(false)
+    var trackerEdit by rememberState<Habit?>(null)
     var shapeEdit by rememberState<tassic.data.PracticeItem?>(null)
 
     val shape = practice
@@ -115,30 +123,54 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
     // one screen's worth of cards per segment instead of five stacked cards
     // requiring a long scroll. Counts are live so the pills double as an
     // at-a-glance summary of each area.
-    var view by rememberState("Practice")
-    val views = listOf("Practice", "Fitness", "Recovery", "Tasks")
+    // Segments follow the modules the user actually turned on, so someone who
+    // doesn't play an instrument never sees a CAGED shape and someone with no
+    // recovery habit never sees a days-clean counter.
+    val settings by store.settingsState.collectAsState()
+    val views = listOfNotNull(
+        "Practice".takeIf { settings.hasModule("MUSIC") },
+        // Gated on both the module and the "habits on Today" preference. The
+        // preference existed from the first build and was read by nothing.
+        "Habits".takeIf { settings.hasModule("HABITS") && settings.habitsOnToday },
+        "Fitness".takeIf { settings.hasModule("FITNESS") },
+        "Recovery".takeIf { settings.hasModule("RECOVERY") },
+        "Tasks".takeIf { settings.hasModule("TASKS") }
+    ).ifEmpty { listOf("Tasks") }
+    var view by rememberState(views.first())
+    // The initial value is captured once, so turning a module off later could
+    // leave `view` pointing at a segment that no longer exists — the switcher
+    // would show nothing selected and the page would render empty.
+    if (view !in views) view = views.first()
+    val habitsDue = store.habitsDueToday(today)
+    val habitsKept = habitsDue.count { store.habitDoneOn(it, today) }
     val viewCounts = mapOf(
         "Practice" to (subtasks.count { it.doneEpochDay == today }.let { "$it/${subtasks.size}" }),
+        "Habits" to "$habitsKept/${habitsDue.size}",
         "Fitness" to "${dueWorkouts.count { it.doneEpochDay == today }}/${dueWorkouts.size}",
         "Recovery" to "${activeHabits.size}",
         "Tasks" to "${openTodos.size}"
     )
 
+    // The brief is a pure function of the tables it reads, so keying the memo
+    // on them keeps it live without recomputing on every frame.
     TabScaffold(
         fabIcon = when (view) {
             "Fitness" -> Icons.Filled.Add
+            "Habits" -> Icons.Filled.Add
             "Recovery" -> Icons.Filled.Add
             "Tasks" -> Icons.Filled.Add
             else -> null
         },
         fabLabel = when (view) {
             "Fitness" -> "New Exercise"
+            "Habits" -> "New Habit"
             "Recovery" -> "Track Habit"
             "Tasks" -> "New Task"
             else -> null
         },
         onFab = when (view) {
             "Fitness" -> ({ workoutEdit = null; workoutOpen = true })
+            "Habits" -> ({ trackerEdit = null; trackerOpen = true })
             "Recovery" -> ({ habitEdit = null; habitOpen = true })
             "Tasks" -> ({ todoEdit = null; todoOpen = true })
             else -> null
@@ -228,6 +260,17 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
             }
         }
 
+        // The hero above covers tasks, training and practice. These are the
+        // domains its engine predates — calendar, habits, reading, people,
+        // week priorities, good deeds — capped at three and hidden entirely
+        // when none apply.
+        val signals = remember(todos, habits, activity, practice, workouts, today) {
+            Coach.signals(store, today)
+        }
+        TodaySignals(signals) { name ->
+            Tab.entries.firstOrNull { it.name == name }?.let(onOpenTab)
+        }
+
         SegmentedControl(
             options = views,
             selected = view,
@@ -240,10 +283,10 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
         TassicCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Focus of the Day", style = MaterialTheme.typography.headlineSmall, color = Navy)
-                    Text("${T.dayName(today)} · ${T.dateLabel(today)}", style = MaterialTheme.typography.bodySmall, color = Muted)
+                    Text("Focus of the Day", style = MaterialTheme.typography.headlineSmall, color = textInk)
+                    Text("${T.dayName(today)} · ${T.dateLabel(today)}", style = MaterialTheme.typography.bodySmall, color = textMuted)
                 }
-                Pill("CAGED", bg = SkySoft)
+                Pill("CAGED", bg = surfaceSoft)
             }
             if (shape == null) {
                 EmptyState(
@@ -254,9 +297,9 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
                     onAction = { onOpenTab(Tab.MUSIC) }
                 )
             } else {
-                Text(shape.title, style = MaterialTheme.typography.titleLarge, color = Ink, modifier = Modifier.padding(top = 8.dp))
+                Text(shape.title, style = MaterialTheme.typography.titleLarge, color = textInk, modifier = Modifier.padding(top = 8.dp))
                 if (shape.detail.isNotBlank()) {
-                    Text(shape.detail, style = MaterialTheme.typography.bodySmall, color = Muted)
+                    Text(shape.detail, style = MaterialTheme.typography.bodySmall, color = textMuted)
                 }
                 subtasks.forEach { sub ->
                     CheckRow(
@@ -287,6 +330,44 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
                 StatTile("$modulesDone", "Modules done", Green, modifier = Modifier.weight(1f))
             }
         }
+        }
+
+        // ---- Habits ---------------------------------------------------------
+        // The repeating positives. They sit here rather than only on Plan
+        // because a habit you have to navigate to is a habit you'll forget —
+        // the whole mechanism depends on being in front of you on the screen
+        // you already open first.
+        if (view == "Habits") {
+            val pulses = remember(activity, today) { Coach.allPulses(store, today) }
+            TassicCard {
+                SectionHeader(
+                    title = "Habits",
+                    subtitle = if (habitsDue.isEmpty()) "Nothing due today" else "$habitsKept of ${habitsDue.size} kept today",
+                    trailing = {
+                        Icon(Icons.Filled.Repeat, contentDescription = null, tint = Blue)
+                    }
+                )
+                if (pulses.isEmpty()) {
+                    EmptyState(
+                        icon = Icons.Filled.Repeat,
+                        title = "No habits yet",
+                        hint = "Read 20 minutes, stretch, call home on Sundays — the small repeating things.",
+                        actionText = "Add a habit",
+                        onAction = { trackerEdit = null; trackerOpen = true }
+                    )
+                } else {
+                    pulses.forEachIndexed { index, pulse ->
+                        HabitRow(
+                            pulse = pulse,
+                            onTick = { store.tickHabit(pulse.habit) },
+                            onUntick = { store.untickHabit(pulse.habit) },
+                            onEdit = { trackerEdit = pulse.habit; trackerOpen = true }
+                        )
+                        if (index != pulses.lastIndex) Spacer(Modifier.height(8.dp))
+                    }
+                }
+            }
+            GhostButton("See four-week consistency in Plan", { onOpenTab(Tab.PLAN) })
         }
 
         // ---- Calisthenics ---------------------------------------------------
@@ -328,7 +409,12 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
         }
 
         // ---- Recovery ---------------------------------------------------------
+        // Behind the same PIN as the recovery history in the journal: a
+        // days-clean counter on the default screen is the most exposed thing
+        // in the app.
         if (view == "Recovery") {
+            LockGate("RECOVERY") {
+            Column {
         SectionHeader(title = "Recovery", subtitle = "Days clean, tracked honestly")
         if (habits.isEmpty()) {
             EmptyState(
@@ -343,10 +429,10 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
             TassicCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(h.name, style = MaterialTheme.typography.titleMedium, color = Navy)
+                        Text(h.name, style = MaterialTheme.typography.titleMedium, color = textInk)
                         Text(
                             "Best ${h.bestStreak} · ${h.relapses} reset${if (h.relapses == 1) "" else "s"}",
-                            style = MaterialTheme.typography.bodySmall, color = Muted
+                            style = MaterialTheme.typography.bodySmall, color = textMuted
                         )
                     }
                     StatTile("${store.daysClean(h)}", "days clean", Green)
@@ -364,6 +450,8 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
         if (habits.isNotEmpty()) {
             GhostButton("+ Track another habit", { habitEdit = null; habitOpen = true })
         }
+            }
+            }
         }
 
         // ---- To-Dos ------------------------------------------------------------
@@ -373,7 +461,7 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
                 title = "To-Dos",
                 subtitle = "${openTodos.size} open",
                 trailing = {
-                    IconActionBtn(Icons.Filled.Add, "New task", tint = Navy) { todoEdit = null; todoOpen = true }
+                    IconActionBtn(Icons.Filled.Add, "New task", tint = textInk) { todoEdit = null; todoOpen = true }
                 }
             )
             if (openTodos.isEmpty() && recentlyDone.isEmpty()) {
@@ -412,12 +500,12 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
                             Icon(
                                 Icons.Filled.Notifications,
                                 contentDescription = "Reminder set",
-                                tint = Muted,
+                                tint = textMuted,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(4.dp))
                         }
-                        Pill(t.priority.name.lowercase().replaceFirstChar { it.uppercase() }, bg = SkySoft)
+                        Pill(t.priority.name.lowercase().replaceFirstChar { it.uppercase() }, bg = surfaceSoft)
                         Spacer(Modifier.width(4.dp))
                         IconActionBtn(Icons.Filled.MoreVert, "Options") { menu = true }
                         ItemMenu(
@@ -444,6 +532,7 @@ fun TodayTab(onOpenTab: (Tab) -> Unit = {}) {
         if (todoOpen) TodoSheet(todoEdit) { todoOpen = false }
         if (workoutOpen) WorkoutSheet(workoutEdit) { workoutOpen = false }
         if (habitOpen) HabitSheet(habitEdit) { habitOpen = false }
+        if (trackerOpen) HabitEditorSheet(trackerEdit) { trackerOpen = false }
         relapseFor?.let { h -> RelapseSheet(h) { relapseFor = null } }
         shapeEdit?.let { s -> ShapeSheet(s) { shapeEdit = null } }
     }

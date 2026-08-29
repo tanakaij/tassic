@@ -12,7 +12,7 @@
  * This is the closest achievable approximation, and it is a very large step up
  * from page-only timers.
  */
-const CACHE = 'tassic-cache-v4';
+const CACHE = 'tassic-cache-v5';
 
 // Synthetic same-origin URLs used as a key/value store. The Cache API is the
 // only storage a service worker and a page can both reach synchronously enough
@@ -34,6 +34,8 @@ const SHELL = [
     './icons/icon-512.png',
     './icons/maskable-512.png',
     './icons/favicon.png',
+    './icons/apple-touch-icon.png',
+    './icons/monochrome-512.png',
     WIDGET_TEMPLATE_URL,
     WIDGET_DATA_URL,
     // Best-effort guesses at the compiled app. Entries that don't exist for a
@@ -58,7 +60,16 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys()
+        Promise.resolve()
+            .then(() => {
+                // Starting the worker costs tens of milliseconds on a cold
+                // launch, and without this the network request doesn't begin
+                // until that's finished.
+                if (self.registration.navigationPreload) {
+                    return self.registration.navigationPreload.enable().catch(() => {});
+                }
+            })
+            .then(() => caches.keys())
             .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
             .then(() => self.clients.claim())
             // Activation is itself a wake: catch up on anything missed while the
@@ -151,24 +162,48 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // App navigations: network-first with a short deadline, then cached shell.
+    // App navigations: cache-first, revalidated in the background.
+    //
+    // This was network-first with a 3 second deadline, which meant every cold
+    // launch — including offline ones, and including installed-app launches on
+    // a slow connection — sat waiting on the network before it could serve a
+    // shell it already had on disk. For a document that is a fixed shell around
+    // a Wasm bundle, that wait buys nothing: the HTML almost never changes, and
+    // when it does, taking the update on the next launch is the standard and
+    // correct trade for an app that must open instantly.
     if (req.mode === 'navigate') {
         // A navigation is a wake. Piggyback a delivery pass on it.
         event.waitUntil(checkReminders('navigate'));
         event.respondWith(
-            fetchWithTimeout(req, 3000)
-                .then((res) => {
-                    if (res && res.ok) {
-                        const copy = res.clone();
-                        caches.open(CACHE).then((c) => c.put('./index.html', copy));
+            (async () => {
+                const cached = await caches.match('./index.html') || await caches.match('./');
+
+                const revalidate = (async () => {
+                    try {
+                        // Navigation preload has already started this request
+                        // where the browser supports it.
+                        const preloaded = await event.preloadResponse;
+                        const res = preloaded || await fetchWithTimeout(req, 8000);
+                        if (res && res.ok) {
+                            const copy = res.clone();
+                            const cache = await caches.open(CACHE);
+                            await cache.put('./index.html', copy);
+                        }
+                        return res;
+                    } catch (e) {
+                        return null;
                     }
-                    return res;
-                })
-                .catch(() =>
-                    caches.match('./index.html')
-                        .then((r) => r || caches.match('./'))
-                        .then((r) => r || OFFLINE_FALLBACK.clone())
-                )
+                })();
+
+                if (cached) {
+                    // Update on disk for next time; don't make this launch wait.
+                    event.waitUntil(revalidate);
+                    return cached;
+                }
+                // First ever visit: nothing cached, so the network is the only
+                // option and the offline card is the honest fallback.
+                return (await revalidate) || OFFLINE_FALLBACK.clone();
+            })()
         );
         return;
     }

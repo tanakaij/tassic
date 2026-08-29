@@ -13,13 +13,21 @@
 
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icons/favicon.png">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Tassic">
 
     <link rel="stylesheet" href="styles.css">
+
+    <!-- Warm the engine files while the stylesheet and splash are still being
+         parsed. Without these the browser doesn't discover skiko.js or
+         composeApp.js until it reaches the bottom of the body, which on a cold
+         start is most of a second of doing nothing. -->
+    <link rel="preload" href="skiko.js" as="script">
+    <link rel="preload" href="composeApp.js" as="script">
 </head>
 <body>
     <div id="webApp"></div>
@@ -38,8 +46,8 @@
 
     <noscript>Tassic needs JavaScript / WebAssembly enabled to run.</noscript>
 
-    <script src="skiko.js"></script>
-    <script src="composeApp.js"></script>
+    <script src="skiko.js" fetchpriority="high"></script>
+    <script src="composeApp.js" fetchpriority="high"></script>
 
     <script>
         // ---- Notification action queue -------------------------------------

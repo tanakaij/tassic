@@ -33,8 +33,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import tassic.data.Coach
 import tassic.data.Graph
+import tassic.data.Growth
 import tassic.data.Insight
+import tassic.data.People
 import tassic.data.Insights as Engine
 import tassic.data.Severity
 import tassic.data.T
@@ -81,6 +84,9 @@ fun InsightsTab(onOpenTab: (Tab) -> Unit = {}) {
     val goals by store.goals.items.collectAsState()
     val workoutLogs by store.workoutLogs.items.collectAsState()
     val journal by store.journal.items.collectAsState()
+    val habits by store.habits.items.collectAsState()
+    val people by store.people.items.collectAsState()
+    val growth by store.growthCheckins.items.collectAsState()
     val settings by store.settingsState.collectAsState()
 
     val today = T.today()
@@ -93,15 +99,30 @@ fun InsightsTab(onOpenTab: (Tab) -> Unit = {}) {
         Engine.weeklyReview(store, today)
     }
 
-    var view by rememberState("Overview")
-    val views = listOf("Overview", "Signals", "Review")
-
-    val visibleInsights = if (settings.insightsCriticalOnly) {
-        report.insights.filter { it.severity == Severity.CRITICAL || it.severity == Severity.WARNING }
-    } else {
-        report.insights
+    // The engine in Insights.kt predates habits, people, growth and focus
+    // sessions, so this screen — the one place a user would go looking for
+    // synthesis — knew nothing about any of them. Rather than fold four new
+    // domains into a 1200-line analyser, the newer engines are merged in here
+    // and sorted by the same weight scale the original uses.
+    val extraInsights = remember(activity, habits, people, growth, today) {
+        (Coach.habitInsights(store, today) +
+            Coach.peopleInsights(store, today) +
+            Growth.insights(store, today))
+            .sortedByDescending { it.weight }
     }
-    val needsAttention = report.insights.count {
+
+    var view by rememberState("Overview")
+    val views = listOf("Overview", "Signals", "Rhythm", "Review")
+
+    val allInsights = remember(report, extraInsights) {
+        (report.insights + extraInsights).sortedByDescending { it.weight }
+    }
+    val visibleInsights = if (settings.insightsCriticalOnly) {
+        allInsights.filter { it.severity == Severity.CRITICAL || it.severity == Severity.WARNING }
+    } else {
+        allInsights
+    }
+    val needsAttention = allInsights.count {
         it.severity == Severity.CRITICAL || it.severity == Severity.WARNING
     }
 
@@ -281,7 +302,7 @@ fun InsightsTab(onOpenTab: (Tab) -> Unit = {}) {
             SectionTitle(
                 "Intelligence",
                 "What your data is saying",
-                "${report.insights.size} observation${if (report.insights.size == 1) "" else "s"}"
+                "${allInsights.size} observation${if (allInsights.size == 1) "" else "s"}"
             )
 
             if (visibleInsights.isEmpty()) {
@@ -295,6 +316,111 @@ fun InsightsTab(onOpenTab: (Tab) -> Unit = {}) {
 
             visibleInsights.forEach { insight ->
                 InsightCard(insight, onOpenTab)
+            }
+        }
+
+        // ---- Rhythm ---------------------------------------------------------------
+        // Habits, focus, people and growth: four things the app now tracks
+        // daily and previously reported on nowhere but their own tabs.
+        if (view == "Rhythm") {
+            val pulses = remember(habits, activity, today) { Coach.allPulses(store, today) }
+            val dueToday = pulses.filter { store.habitDueOn(it.habit, today) }
+            val focusWeek = remember(activity, today) {
+                (0..6).sumOf { back -> store.focusMinutesOn(today - back) }
+            }
+            val window = remember(activity, today) { Coach.productiveWindow(store, today) }
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MetricTile(
+                    "${dueToday.count { it.doneToday }}/${dueToday.size}",
+                    "habits today",
+                    tint = Green,
+                    modifier = Modifier.weight(1f)
+                )
+                MetricTile(
+                    if (focusWeek >= 60) "${focusWeek / 60}h ${focusWeek % 60}m" else "${focusWeek}m",
+                    "focused this week",
+                    tint = Blue,
+                    modifier = Modifier.weight(1f)
+                )
+                MetricTile(
+                    "${Growth.monthsWithDeeds(store, today)}",
+                    "months giving",
+                    tint = tassic.ui.theme.Violet,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            if (window != null) {
+                SunkenBox {
+                    Text(
+                        "You close most things between ${window.first}:00 and ${window.second}:00. " +
+                            "Worth protecting that block rather than filling it with meetings.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = t.textSecondary
+                    )
+                }
+            }
+
+            if (pulses.isNotEmpty()) {
+                SectionTitle("Consistency", "Habits over four weeks")
+                TassicCard {
+                    pulses.sortedByDescending { it.consistency }.forEach { pulse ->
+                        BarRow(
+                            label = pulse.habit.name,
+                            value = if (pulse.dueLast28 == 0) 0 else pulse.consistency,
+                            max = 100,
+                            caption = if (pulse.dueLast28 == 0) {
+                                "not due yet"
+                            } else {
+                                "${pulse.keptLast28} of ${pulse.dueLast28} days"
+                            },
+                            color = when {
+                                pulse.consistency >= 80 -> Green
+                                pulse.consistency >= 45 -> tassic.ui.theme.AmberDeep
+                                else -> tassic.ui.theme.Coral
+                            }
+                        )
+                    }
+                }
+            }
+
+            val overdue = remember(people, today) { People.overdue(store, today) }
+            val birthdays = remember(people, today) { People.upcomingBirthdays(store, today) }
+            if (overdue.isNotEmpty() || birthdays.isNotEmpty()) {
+                SectionTitle("People", "Who you said you'd keep close")
+                TassicCard {
+                    birthdays.take(3).forEach { status ->
+                        StatLine(status.person.name, "birthday in ${status.daysToBirthday} day(s)")
+                    }
+                    overdue.take(4).forEach { status ->
+                        StatLine(
+                            status.person.name,
+                            status.daysSince?.let { "$it days" } ?: "no contact logged"
+                        )
+                    }
+                }
+            }
+
+            val growthPulses = remember(growth, today) { Growth.allPulses(store, today) }
+            if (growthPulses.any { it.monthsRated > 0 }) {
+                SectionTitle("Growth", "Monthly self-assessment")
+                TassicCard {
+                    growthPulses.forEach { pulse ->
+                        StatLine(
+                            pulse.area.name,
+                            pulse.currentRating?.let { "$it of 5 this month" } ?: "not rated yet"
+                        )
+                    }
+                }
+            }
+
+            if (pulses.isEmpty() && focusWeek == 0 && people.isEmpty()) {
+                EmptyState(
+                    icon = Icons.Filled.Insights,
+                    title = "Nothing to compare yet",
+                    hint = "Habits, focus sessions, people and growth ratings all report here once there's a fortnight of them."
+                )
             }
         }
 
@@ -442,5 +568,8 @@ private fun domainColor(domain: String, fallback: Color): Color = when (domain) 
     "Tasks" -> tassic.ui.theme.Violet
     "Faith" -> tassic.ui.theme.AmberDeep
     "Recovery" -> Green
+    "habits" -> Green
+    "people" -> Blue
+    "growth" -> tassic.ui.theme.Violet
     else -> fallback
 }

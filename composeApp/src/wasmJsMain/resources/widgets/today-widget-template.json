@@ -82,7 +82,7 @@
                     "items": [
                         {
                             "type": "TextBlock",
-                            "text": "${modulesDone}",
+                            "text": "${habitsLabel}",
                             "weight": "Bolder",
                             "size": "ExtraLarge",
                             "color": "Accent",
@@ -90,7 +90,7 @@
                         },
                         {
                             "type": "TextBlock",
-                            "text": "modules done",
+                            "text": "habits kept",
                             "isSubtle": true,
                             "size": "Small",
                             "spacing": "None",

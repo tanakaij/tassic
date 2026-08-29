@@ -2,20 +2,37 @@
     "id": "./",
     "name": "Tassic — Unified Life OS",
     "short_name": "Tassic",
-    "description": "A unified life management OS: goals, music studio, recovery tracking, calisthenics, career roadmaps, faith routines, insights and a multimodal journal.",
+    "description": "A personal life OS: quick capture with natural-language dates, a day and week planner, habits and streaks, goals, focus sessions, an evening review, a multimodal journal and an insight engine that explains every observation it makes.",
     "start_url": "./",
     "scope": "./",
     "display": "standalone",
-    "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+    "display_override": [
+        "window-controls-overlay",
+        "standalone",
+        "minimal-ui"
+    ],
     "orientation": "portrait-primary",
-    "background_color": "#BBD8EC",
+    "background_color": "#0D2648",
     "theme_color": "#BBD8EC",
-    "categories": ["productivity", "lifestyle", "health", "education"],
+    "categories": [
+        "productivity",
+        "lifestyle",
+        "health",
+        "education"
+    ],
     "launch_handler": {
-        "client_mode": ["navigate-existing", "auto"]
+        "client_mode": [
+            "navigate-existing",
+            "auto"
+        ]
     },
     "prefer_related_applications": false,
     "icons": [
+        {
+            "src": "icons/favicon.png",
+            "sizes": "64x64",
+            "type": "image/png"
+        },
         {
             "src": "icons/icon-192.png",
             "sizes": "192x192",
@@ -33,6 +50,12 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
+        },
+        {
+            "src": "icons/monochrome-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "monochrome"
         }
     ],
     "widgets": [
@@ -47,7 +70,10 @@
             "auth": false,
             "update": 1800,
             "icons": [
-                { "src": "icons/icon-192.png", "sizes": "192x192" }
+                {
+                    "src": "icons/icon-192.png",
+                    "sizes": "192x192"
+                }
             ],
             "screenshots": [
                 {
@@ -60,39 +86,64 @@
     ],
     "shortcuts": [
         {
+            "name": "Capture something",
+            "short_name": "Capture",
+            "description": "One line becomes a task, note, goal or wish",
+            "url": "./?action=capture",
+            "icons": [
+                {
+                    "src": "icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
             "name": "Today",
             "short_name": "Today",
             "description": "Your daily brief and checklists",
             "url": "./?tab=today",
-            "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+            "icons": [
+                {
+                    "src": "icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
         },
         {
-            "name": "Insights",
-            "short_name": "Insights",
-            "description": "Momentum, trends and what needs attention",
-            "url": "./?tab=insights",
-            "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+            "name": "Plan",
+            "short_name": "Plan",
+            "description": "The day timeline, the week and your habits",
+            "url": "./?tab=plan",
+            "icons": [
+                {
+                    "src": "icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
         },
         {
-            "name": "New Journal Entry",
-            "short_name": "Journal",
-            "description": "Write or record today's entry",
-            "url": "./?tab=journal",
-            "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+            "name": "Start a focus session",
+            "short_name": "Focus",
+            "description": "A timed block, logged when it ends",
+            "url": "./?action=focus",
+            "icons": [
+                {
+                    "src": "icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
         },
         {
-            "name": "Music Studio",
-            "short_name": "Music",
-            "description": "Today's shape, mode and key",
-            "url": "./?tab=music",
-            "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
-        },
-        {
-            "name": "Reminder Settings",
-            "short_name": "Settings",
-            "description": "Notification rules and delivery diagnostics",
-            "url": "./?tab=settings",
-            "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+            "name": "Close the day",
+            "short_name": "Review",
+            "description": "What landed, what slipped, how it felt",
+            "url": "./?action=review",
+            "icons": [
+                {
+                    "src": "icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
         }
     ]
 }
