@@ -1,0 +1,27 @@
+CREATE TABLE goals (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    horizon TEXT NOT NULL DEFAULT 'SHORT',
+    category TEXT NOT NULL DEFAULT 'General',
+    progress INTEGER NOT NULL DEFAULT 0,
+    targetEpochDay INTEGER,
+    createdAt INTEGER NOT NULL
+);
+
+insertGoal:
+INSERT INTO goals(title, description, horizon, category, progress, targetEpochDay, createdAt)
+VALUES(?, ?, ?, ?, ?, ?, ?);
+
+updateGoal:
+UPDATE goals SET title = ?, description = ?, horizon = ?, category = ?, progress = ?, targetEpochDay = ?
+WHERE id = ?;
+
+deleteGoalById:
+DELETE FROM goals WHERE id = ?;
+
+selectAllGoals:
+SELECT * FROM goals ORDER BY createdAt DESC;
+
+countGoals:
+SELECT COUNT(*) FROM goals;

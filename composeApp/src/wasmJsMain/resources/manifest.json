@@ -1,0 +1,149 @@
+{
+    "id": "./",
+    "name": "Tassic — Unified Life OS",
+    "short_name": "Tassic",
+    "description": "A personal life OS: quick capture with natural-language dates, a day and week planner, habits and streaks, goals, focus sessions, an evening review, a multimodal journal and an insight engine that explains every observation it makes.",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "display_override": [
+        "window-controls-overlay",
+        "standalone",
+        "minimal-ui"
+    ],
+    "orientation": "portrait-primary",
+    "background_color": "#0D2648",
+    "theme_color": "#BBD8EC",
+    "categories": [
+        "productivity",
+        "lifestyle",
+        "health",
+        "education"
+    ],
+    "launch_handler": {
+        "client_mode": [
+            "navigate-existing",
+            "auto"
+        ]
+    },
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/favicon.png",
+            "sizes": "64x64",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/monochrome-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "monochrome"
+        }
+    ],
+    "widgets": [
+        {
+            "name": "Tassic Today",
+            "short_name": "Today",
+            "description": "Momentum, what's due, your streak and the single next thing worth doing.",
+            "tag": "today",
+            "ms_ac_template": "widgets/today-widget-template.json",
+            "data": "widgets/today-widget-data.json",
+            "type": "application/json",
+            "auth": false,
+            "update": 1800,
+            "icons": [
+                {
+                    "src": "icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ],
+            "screenshots": [
+                {
+                    "src": "icons/icon-512.png",
+                    "sizes": "512x512",
+                    "label": "Tassic Today widget"
+                }
+            ]
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Capture something",
+            "short_name": "Capture",
+            "description": "One line becomes a task, note, goal or wish",
+            "url": "./?action=capture",
+            "icons": [
+                {
+                    "src": "icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Today",
+            "short_name": "Today",
+            "description": "Your daily brief and checklists",
+            "url": "./?tab=today",
+            "icons": [
+                {
+                    "src": "icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Plan",
+            "short_name": "Plan",
+            "description": "The day timeline, the week and your habits",
+            "url": "./?tab=plan",
+            "icons": [
+                {
+                    "src": "icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Start a focus session",
+            "short_name": "Focus",
+            "description": "A timed block, logged when it ends",
+            "url": "./?action=focus",
+            "icons": [
+                {
+                    "src": "icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Close the day",
+            "short_name": "Review",
+            "description": "What landed, what slipped, how it felt",
+            "url": "./?action=review",
+            "icons": [
+                {
+                    "src": "icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,201 @@
+{
+    "type": "AdaptiveCard",
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "version": "1.5",
+    "body": [
+        {
+            "type": "ColumnSet",
+            "columns": [
+                {
+                    "type": "Column",
+                    "width": "auto",
+                    "items": [
+                        {
+                            "type": "Image",
+                            "url": "icons/icon-192.png",
+                            "size": "Small",
+                            "width": "28px",
+                            "height": "28px"
+                        }
+                    ]
+                },
+                {
+                    "type": "Column",
+                    "width": "stretch",
+                    "verticalContentAlignment": "Center",
+                    "items": [
+                        {
+                            "type": "TextBlock",
+                            "text": "Tassic — Today",
+                            "weight": "Bolder",
+                            "size": "Medium",
+                            "wrap": true
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "${dayLabel}",
+                            "isSubtle": true,
+                            "size": "Small",
+                            "spacing": "None",
+                            "wrap": true
+                        }
+                    ]
+                },
+                {
+                    "type": "Column",
+                    "width": "auto",
+                    "verticalContentAlignment": "Center",
+                    "items": [
+                        {
+                            "type": "TextBlock",
+                            "text": "${momentum}%",
+                            "weight": "Bolder",
+                            "size": "Large",
+                            "color": "Accent",
+                            "horizontalAlignment": "Right"
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "momentum",
+                            "isSubtle": true,
+                            "size": "Small",
+                            "spacing": "None",
+                            "horizontalAlignment": "Right"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "TextBlock",
+            "text": "${headline}",
+            "spacing": "Medium",
+            "wrap": true
+        },
+        {
+            "type": "ColumnSet",
+            "spacing": "Medium",
+            "columns": [
+                {
+                    "type": "Column",
+                    "width": "stretch",
+                    "items": [
+                        {
+                            "type": "TextBlock",
+                            "text": "${habitsLabel}",
+                            "weight": "Bolder",
+                            "size": "ExtraLarge",
+                            "color": "Accent",
+                            "horizontalAlignment": "Center"
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "habits kept",
+                            "isSubtle": true,
+                            "size": "Small",
+                            "spacing": "None",
+                            "horizontalAlignment": "Center",
+                            "wrap": true
+                        }
+                    ]
+                },
+                {
+                    "type": "Column",
+                    "width": "stretch",
+                    "items": [
+                        {
+                            "type": "TextBlock",
+                            "text": "${openTodos}",
+                            "weight": "Bolder",
+                            "size": "ExtraLarge",
+                            "color": "Good",
+                            "horizontalAlignment": "Center"
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "tasks open",
+                            "isSubtle": true,
+                            "size": "Small",
+                            "spacing": "None",
+                            "horizontalAlignment": "Center",
+                            "wrap": true
+                        }
+                    ]
+                },
+                {
+                    "type": "Column",
+                    "width": "stretch",
+                    "items": [
+                        {
+                            "type": "TextBlock",
+                            "text": "${streakDays}",
+                            "weight": "Bolder",
+                            "size": "ExtraLarge",
+                            "color": "Warning",
+                            "horizontalAlignment": "Center"
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "day streak",
+                            "isSubtle": true,
+                            "size": "Small",
+                            "spacing": "None",
+                            "horizontalAlignment": "Center",
+                            "wrap": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "Container",
+            "spacing": "Medium",
+            "style": "emphasis",
+            "bleed": true,
+            "items": [
+                {
+                    "type": "TextBlock",
+                    "text": "START WITH",
+                    "size": "Small",
+                    "isSubtle": true,
+                    "spacing": "None"
+                },
+                {
+                    "type": "TextBlock",
+                    "text": "${nextAction}",
+                    "weight": "Bolder",
+                    "spacing": "None",
+                    "wrap": true
+                },
+                {
+                    "type": "TextBlock",
+                    "text": "${nextReason}",
+                    "size": "Small",
+                    "isSubtle": true,
+                    "spacing": "None",
+                    "wrap": true
+                }
+            ]
+        },
+        {
+            "type": "TextBlock",
+            "text": "Focus: ${focusTitle}",
+            "size": "Small",
+            "isSubtle": true,
+            "spacing": "Small",
+            "wrap": true
+        }
+    ],
+    "actions": [
+        {
+            "type": "Action.OpenUrl",
+            "title": "Open Tassic",
+            "url": "./?tab=today"
+        },
+        {
+            "type": "Action.OpenUrl",
+            "title": "Insights",
+            "url": "./?tab=insights"
+        }
+    ]
+}
